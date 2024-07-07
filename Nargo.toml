@@ -1,0 +1,2 @@
+[workspace]
+members=["base_parsing_circuit", "base_rec_parsing_circuit", "rec_parsing_circuit", "hash_checks"]
