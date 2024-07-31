@@ -1,0 +1,7 @@
+[package]
+name = "base_parsing_circuit_no_labels"
+type = "bin"
+authors = [""]
+compiler_version = ">=0.31.0"
+
+[dependencies]
