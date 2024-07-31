@@ -2,6 +2,8 @@ from math import floor
 import sys 
 import os
 
+sys.setrecursionlimit(100000)
+
 N=32
 K=16
 
@@ -26,6 +28,7 @@ mt_hashes[18]="0x19ac6f6b56a794b6eb5fbe407dbb911792d151a4dfebbd9423a6b53e027be9b
 mt_hashes[19]="0x2bdc60e86599419a3e24f06df65445d3a016af84ec3c11770e943df37051de8e"
 mt_hashes[20]="0x2fdf536222da76b4eb9919e950049190bf2919b8560a911b761b3ec405de39aa"
 
+# Hashed with "leaf=1"
 merkle_prods={}
 merkle_prods[3]="[[mem_proofs_prod]]\nhashpath=[0x02, 0x03, 0x04]\n index=3\n"
 merkle_prods[4]="[[mem_proofs_prod]]\nhashpath=[0x02, 0x03, 0x04, 0x05]\n index=3\n"
@@ -290,6 +293,23 @@ def generate_prod_strings(prod_arr):
         out_str += "[[prods]]\nparent=" + str(tup[0]) + "\nchildL=" + str(tup[1]) + "\nchildR=" + str(tup[2]) + "\n"
     return out_str
 
+
+def generate_prod_strings2(prod_arr, labels):
+    out_str = ""
+    for tup in prod_arr:
+        parent_label=labels[tup[0]]
+        childL_label=labels[tup[1]]
+        childR_label=labels[tup[2]]
+        parent_idx=tup[0]
+        childL_idx=tup[1]
+        childR_idx=tup[2]
+        out_str += "[[prods]]\nparent.label=" + str(parent_label) + "\nparent.idx=" + str(parent_idx) \
+            + "\nchildL.label=" + str(childL_label) + "\nchildL.idx=" + str(childL_idx) \
+               + "\nchildR.label=" + str(childR_label) + "\nchildR.idx=" + str(childR_idx) + "\n"
+    return out_str
+
+
+
 def generate_arr_str(label, arr):
     out_str = label
     out_str += "=["
@@ -378,6 +398,16 @@ def generate_all_prover_files(n, k, g=3):
             with open('./base_parsing_circuit/Verifier.toml', 'w') as file:
                 file.write(string_str + '\n') 
             # Open a file in write mode ('w')
+
+            prods_str2 = generate_prod_strings2(prod_arr[0:k-1], label_str)
+            out_strs = [string_str, prods_com, prods_str2, mem_proofs_str]
+            with open('./base_parsing_circuit_no_labels/Prover.toml', 'w') as file:
+                for elt in out_strs:
+                    file.write(elt + '\n')
+            with open('./base_parsing_circuit_no_labels/Verifier.toml', 'w') as file:
+                file.write(string_str + '\n') 
+            # Open a file in write mode ('w')
+
         else:
             prods_str = generate_prod_strings(prod_arr[i*k - 1:(i+1)*k - 1])
             # print(prods_str)
@@ -430,6 +460,25 @@ def generate_all_prover_files_with_merkle_paths(n, k, g):
             with open('./base_parsing_circuit/Verifier.toml', 'w') as file:
                 file.write(string_str + '\n') 
             # Open a file in write mode ('w')
+
+            prods_str2 = generate_prod_strings2(prod_arr[0:k-1], label_arr)
+            out_strs = [string_str, prods_com, prods_str2, mem_proofs_str]
+            with open('./base_parsing_circuit_no_labels/Prover.toml', 'w') as file:
+                for elt in out_strs:
+                    file.write(elt + '\n')
+            with open('./base_parsing_circuit_no_labels/Verifier.toml', 'w') as file:
+                file.write(string_str + '\n') 
+
+            mem_proofs_str2 = generate_arr_str("mem_proofs_prod", rule_arr[:k-1])
+            prods_str3 = generate_prod_strings2(prod_arr[0:k-1], label_arr)
+            out_strs = [string_str, prods_com, mem_proofs_str2, prods_str3]
+            with open('./base_parsing_circuit_no_labels_no_mt/Prover.toml', 'w') as file:
+                for elt in out_strs:
+                    file.write(elt + '\n')
+            with open('./base_parsing_circuit_no_labels_no_mt/Verifier.toml', 'w') as file:
+                file.write(string_str + '\n') 
+
+
         else:
             prods_str = generate_prod_strings(prod_arr[i*k - 1:(i+1)*k - 1])
             # print(prods_str)
@@ -455,8 +504,48 @@ def generate_all_prover_files_with_merkle_paths(n, k, g):
             with open('./verifier_toml_files/Verifier.toml' + str(i), 'w') as file:
                 file.write(string_str + '\n')  
 
-n_from_sys = int(sys.argv[1])
-k_from_sys = int(sys.argv[2])
-g_from_sys = int(sys.argv[3])
-# generate_all_prover_files(n_from_sys, k_from_sys)
-generate_all_prover_files_with_merkle_paths(n_from_sys, k_from_sys, g_from_sys)
+########## JSON writing functions
+
+
+def generate_prod_strings_json(prod_arr, labels):
+    out_str = "[\n"
+    i = 0 
+    arr_len = len(prod_arr)
+    for tup in prod_arr:
+        parent_label=labels[tup[0]]
+        childL_label=labels[tup[1]]
+        childR_label=labels[tup[2]]
+        parent_idx=tup[0]
+        childL_idx=tup[1]
+        childR_idx=tup[2]
+        out_str += "\t{\n"\
+        + "\t\t\"parent\": {\"label\":" + str(parent_label) + ", \"index\": " + str(parent_idx) + "},\n" \
+        + "\t\t\"childL\": {\"label\":" + str(childL_label) + ", \"index\": " + str(childL_idx) + "},\n" \
+        + "\t\t\"childR\": {\"label\":" + str(childR_label) + ", \"index\": " + str(childR_idx) + "}\n\t}"
+        if(i < (arr_len - 1)):
+            out_str += ",\n"
+        i += 1
+    out_str = out_str + "\n]\n"
+    return out_str
+
+
+# Takes as input a string and a filename (without the .json ext) and writes 
+# the corresponding string and production to a JSON file (complete with .json ext)
+def generate_and_write_productions_json(string_len, filename):
+    [string_arr, label_arr, prod_arr, _] = naive_prods_full_witness_generator(string_len)
+    elt1 = "\"string\":" + str(string_arr) + ","
+    elt2 = generate_prod_strings_json(prod_arr, label_arr)
+    out_str = "{" + elt1 + "\n\"productions\": " + elt2 + "}" 
+    with open(filename + '.json', 'w') as file:
+        file.write(out_str)
+
+generate_and_write_productions_json(4, "test")
+
+# n_from_sys = int(sys.argv[1])
+# k_from_sys = int(sys.argv[2])
+# g_from_sys = int(sys.argv[3])
+# # generate_all_prover_files(n_from_sys, k_from_sys)
+
+
+
+# generate_all_prover_files_with_merkle_paths(n_from_sys, k_from_sys, g_from_sys)
