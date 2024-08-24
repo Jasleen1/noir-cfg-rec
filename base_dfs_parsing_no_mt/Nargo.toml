@@ -1,0 +1,7 @@
+[package]
+name = "base_dfs_parsing_no_mt"
+type = "bin"
+authors = [""]
+compiler_version = ">=0.31.0"
+
+[dependencies]
