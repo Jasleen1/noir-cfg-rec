@@ -22,8 +22,8 @@ Rules:
  */
 use dep::std;
 
-global N = 4;
-global K = 4;
+global N = 8192;
+global K = 16384;
 global Log_Rules = 3;
 
 global S = 1;
@@ -196,11 +196,19 @@ fn parseTreeCheckerProdsNaive2(
             // print("output 2 = ");
             // print(output);
             // print("\n");
+            // print("Left child = ");
+            // print(left_child);
+            // print("\n");
+            // print("String = ");
+            // print(string);
+            // print("\nLeaf count = ");
+            // print(leaf_count);
         }
         else {
             // This and the other node counter check, above ensures that all child nodes
             // appear in exactly one production and that each non-root node
             // has a parent. 
+            print(running_hash);
             let next_hash = made_up_hash_fn(right_child, running_hash);
             stack_depth = stack_depth + 1;
             running_hash = next_hash;
@@ -245,7 +253,7 @@ fn parseTreeCheckerProdsNaive2(
 #[recursive]
 fn main(
     string: pub [Field; N],
-    labels: [Field; 3*N - 1],
+    // labels: [Field; 3*N - 1],
     prods: [Production2; K],
     mem_proofs_prod: [Field; K],
     // These are passed in from the computation done before
@@ -255,28 +263,28 @@ fn main(
     stack_depth: Field,
     stack_expected_popped_vals: [StackTuple; K],
     // Below is the stuff we need to verify the recursive proof
-    // verification_key : [Field; 114], 
-    // proof : [Field; 109], 
-    // key_hash : Field,
+    verification_key : [Field; 114], 
+    proof : [Field; 109], 
+    key_hash : Field,
 ) -> pub (Field, Field, Field, Field) {
-    // let mut input_slice=string.as_slice();
-    // input_slice=input_slice.push_back(next_parent_index);
-    // input_slice=input_slice.push_back(leaf_count);
-    // input_slice=input_slice.push_back(stack_hash);
-    // input_slice=input_slice.push_back(stack_depth);
-    // std::verify_proof(
-    //     verification_key.as_slice(), 
-    //     proof.as_slice(), 
-    //     input_slice,
-    //     key_hash,
-    // );
+    let mut input_slice=string.as_slice();
+    input_slice=input_slice.push_back(next_parent_index);
+    input_slice=input_slice.push_back(leaf_count);
+    input_slice=input_slice.push_back(stack_hash);
+    input_slice=input_slice.push_back(stack_depth);
+    std::verify_proof(
+        verification_key.as_slice(), 
+        proof.as_slice(), 
+        input_slice,
+        key_hash,
+    );
     // let (node_counter, leaf_count, out_bit) = parseTreeCheckerProdsNaive(string, labels, prods, mem_proofs_prod, string_elt_count, node_counter);
     // assert(out_bit == true);
 
     let (next_parent_index, leaf_count, 
                 next_stack_hash, stack_depth, out_bit) = 
                                             parseTreeCheckerProdsNaive2(string, prods, mem_proofs_prod, 
-                                            next_parent_index, leaf_count - 1, stack_hash, stack_depth, stack_expected_popped_vals);
+                                            next_parent_index, leaf_count, stack_hash, stack_depth, stack_expected_popped_vals);
     assert(out_bit == true);
     (next_parent_index, leaf_count, next_stack_hash, stack_depth)
 }
@@ -284,7 +292,7 @@ fn main(
 
 /*
 Commenting since this test is for fixed N and K params
-*/
+
 #[test]
 fn test_parse_tree_checker_prods_naive_rec1() {
     let base_prod = Production2{
@@ -338,3 +346,4 @@ fn test_parse_tree_checker_prods_naive_rec1() {
     assert(leaf_count == (4 as Field));
     assert(out_bit == true);
 }
+*/

@@ -144,6 +144,7 @@ def label_fn(curr, count):
         if curr.childR != None:
             rule[2] = curr.childR.label
         curr.ruleId = g_1_rules.index(tuple(rule))
+        
 
 def append_wits(node, extras_tuple):
     (label_arr, prod_arr, rule_arr) = extras_tuple
@@ -155,6 +156,20 @@ def append_wits(node, extras_tuple):
         if node.childR != None:
             right_child = node.childR.bfsId
         prod_arr.append((node.bfsId, left_child, right_child))
+
+def append_wits_dfs(node_and_hash, extras_tuple):
+    (label_arr, prod_arr, rule_arr, stack_arr) = extras_tuple
+    node=node_and_hash[0]
+    hash=node_and_hash[1]
+    label_arr.append(node.label)
+    if node.ruleId != -1:
+        rule_arr.append(node.ruleId)
+        left_child = node.childL.bfsId
+        right_child = 0
+        if node.childR != None:
+            right_child = node.childR.bfsId
+        prod_arr.append((node.bfsId, left_child, right_child))
+        stack_arr.append((node.bfsId, node.label, hash))
     
 def bfs_parse_tree(root_node, thing_to_do_at_node, extra_args=None):
     stack = [root_node]
@@ -171,6 +186,84 @@ def bfs_parse_tree(root_node, thing_to_do_at_node, extra_args=None):
             count = count + 1
     return root_node
     
+def dfs_parse_tree_with_auth_stack(root_node, thing_to_do_at_stack_item, hash_fn_to_use, stack_trackers, extra_args=None):
+    (leaf_counters, running_hashes,stack_depths,next_parent_index) = stack_trackers
+    running_hash = 0 
+    # stack_depths.append(0)
+    running_hashes.append(running_hash)
+    stack = [(root_node, running_hash)]
+    next_hash = hash_fn_to_use((root_node.label, root_node.bfsId, running_hash))
+    running_hash = next_hash
+    stack_depths.append(1)
+    leaf_counters.append(0)
+    count = 0
+    leaf_count = 0
+    while stack != []:
+        curr_item = stack.pop(-1)
+        curr = curr_item[0]
+        hash_preimage = curr_item[1]
+        # print("Running hash before pop = " + str(running_hash))
+        # print("Curr item =")
+        # print("label = " + str(curr.label) + " idx = " + str(curr.bfsId))
+        running_hash = hash_preimage
+        
+        
+        # print("Running hash after pop = " + str(running_hash))
+        
+        if extra_args != None:
+            thing_to_do_at_stack_item(curr_item, extra_args)
+        else:
+            thing_to_do_at_stack_item(curr_item, count) 
+        # In the leaf case we have no children
+        # Non-leaf case
+        if curr.childL != None:
+            # Non-terminal --> Terminal case i.e. there's only one child 
+            next_parent_index.append(curr.bfsId)    
+            if curr.childR == None:
+                running_hashes.append(running_hash)
+                # print("Running hash 2 = " + str(running_hash))
+                # Append node to stack but we don't need to update the running hash
+                stack.append((curr.childL, running_hash))
+                leaf_count = leaf_count + 1
+                stack_depths.append(stack_depths[-1] - 1)
+            else:
+                # print("Running hash 3 = " + str(running_hash))
+                # print("Child R stuff: label = " + str(curr.childR.label) + " id = " + str(curr.childR.bfsId))
+                # First append the right child
+                stack.append((curr.childR, running_hash))
+                # Update the running hash to include the item just pushed, 
+                # this is the next hash-preimage until the item is popped
+                running_hash = hash_fn_to_use((curr.childR.label, curr.childR.bfsId, running_hash)) 
+                # print("RUnning hash 4 = " + str(running_hash))
+                # print("Child L stuff: label = " + str(curr.childL.label) + " id = " + str(curr.childL.bfsId))
+                # Then append the left child
+                stack.append((curr.childL, running_hash))
+                stack_depths.append(stack_depths[-1] + 1)
+                running_hash = hash_fn_to_use((curr.childL.label, curr.childL.bfsId, running_hash))
+                running_hashes.append(running_hash)
+                # print("Running hash 5 = " + str(running_hash))
+            leaf_counters.append(leaf_count)
+        count = count + 1
+        # if curr_item != None:
+        #     curr = curr_item[0]
+        #     curr_hash = curr_item[1]
+        #     if curr.ruleId != -1:
+        #         running_hash = curr_hash
+        #     if extra_args != None:
+        #         thing_to_do_at_stack_item(curr_item, extra_args)
+        #     else:
+        #         thing_to_do_at_stack_item(curr_item, count)
+        #     if curr.childR != None:
+        #         stack.append((curr.childR, running_hash))
+        #         running_hash = hash_fn_to_use((curr.childR.label, curr.childR.bfsId, running_hash))              
+        #         if curr.childL != None:
+        #             stack.append((curr.childL, running_hash))
+        #             if curr.childL.childL != None:
+        #                 running_hash = hash_fn_to_use((curr.childL.label, curr.childL.bfsId, running_hash))   
+        #     count = count + 1
+    return root_node
+
+
 def dfs_parse_tree(root_node, thing_to_do_at_node, extra_args=None):
     stack = [root_node]
     count = 0
@@ -182,11 +275,12 @@ def dfs_parse_tree(root_node, thing_to_do_at_node, extra_args=None):
             else:
                 thing_to_do_at_node(curr, count)
             if curr.childR != None:
-                stack.append(curr.childR)
+                stack.append(curr.childR)       
             stack.append(curr.childL)
             count = count + 1
     return root_node
-    
+
+
 def generate_simple_str(string_len):
     # Make sure the string is a multiple of 2
     if string_len % 2 == 1:
@@ -207,6 +301,8 @@ def generate_prod_strings(prod_arr):
 
 def generate_prod_strings2(prod_arr, labels):
     out_str = ""
+    # print(labels)
+    # print(prod_arr)
     for tup in prod_arr:
         parent_label=labels[tup[0]]
         childL_label=labels[tup[1]]
@@ -219,8 +315,8 @@ def generate_prod_strings2(prod_arr, labels):
         out_str += "[[prods]]\nparent.label=" + str(parent_label) + "\nparent.idx=" + str(parent_idx) \
             + "\nchildL.label=" + str(childL_label) + "\nchildL.idx=" + str(childL_idx) \
                + "\nchildR.label=" + str(childR_label) + "\nchildR.idx=" + str(childR_idx) + "\n"
+    # print(out_str)
     return out_str
-
 
 
 def generate_arr_str(label, arr):
@@ -232,22 +328,23 @@ def generate_arr_str(label, arr):
     out_str += "]"
     return out_str
 
-def naive_prods_full_witness_generator(string_len):
-    # Make sure the string is a multiple of 2
-    if string_len % 2 == 1:
-        return
-    string_arr = generate_simple_str(string_len)
-    root_node = bfs_parse_tree(build_parse_tree(string_len), label_fn)
-    label_arr = [] 
-    prod_arr = [] 
-    rule_arr = []    
-    bfs_parse_tree(root_node, append_wits, (label_arr, prod_arr,rule_arr))
-    # string_str = generate_arr_str("string", string_arr)
-    # label_str = generate_arr_str("labels", label_arr)
-    # prods_str = generate_prod_strings(prod_arr)
-    # mem_proofs_str = generate_arr_str("mem_proofs_prod", rule_arr)
-    return [string_arr, label_arr, prod_arr, rule_arr]
-    # return [string_str, label_str, prods_str, mem_proofs_str]
+def generate_stack_str(stack_arr):
+    out_str = ""
+    for item in stack_arr:
+        idx = item[0]
+        label = item[1]
+        hash_preimage = item[2]
+        out_str += "[[stack_expected_popped_vals]]\nidx=" + str(idx) + "\nlabel=" + str(label) \
+            + "\nhash_preimage=" + str(hash_preimage) + "\n"
+    return out_str
+
+
+def made_up_hash_fn(node_and_previous_hash):
+    node_label = node_and_previous_hash[0]
+    node_id = node_and_previous_hash[1]
+    previous_hash = node_and_previous_hash[2]
+    return (node_label + node_id + previous_hash) % 10 
+
 
 def naive_prods_full_witness_generator_dfs(string_len):
     # Make sure the string is a multiple of 2
@@ -266,6 +363,36 @@ def naive_prods_full_witness_generator_dfs(string_len):
     return [string_arr, label_arr, prod_arr, rule_arr]
     # return [string_str, label_str, prods_str, mem_proofs_str]
 
+def naive_prods_full_witness_generator_dfs_with_stack(string_len):
+    # Make sure the string is a multiple of 2
+    if string_len % 2 == 1:
+        return
+    string_arr = generate_simple_str(string_len)
+    root_node = dfs_parse_tree(build_parse_tree(string_len), label_fn)
+    label_arr = [] 
+    prod_arr = [] 
+    rule_arr = []    
+    stack_arr = []
+    leaf_counters = []
+    running_hashes = []
+    stack_depths = []   
+    next_parents=[] 
+    dfs_parse_tree_with_auth_stack(root_node, append_wits_dfs, made_up_hash_fn, (leaf_counters, running_hashes,stack_depths,next_parents), (label_arr, prod_arr,rule_arr,stack_arr))
+    # string_str = generate_arr_str("string", string_arr)
+    # label_str = generate_arr_str("labels", label_arr)
+    # prods_str = generate_prod_strings(prod_arr)
+    # mem_proofs_str = generate_arr_str("mem_proofs_prod", rule_arr)
+    # print("Leaf counter arr = ")
+    # print(leaf_counters)
+    # print("\nRunning hashes = ")
+    # print(running_hashes)
+    # print("\nStack depth = ")
+    # print(stack_depths)
+    # print("\nNext Parents = ")
+    # print(next_parents)
+    return [string_arr, label_arr, prod_arr, rule_arr,stack_arr, leaf_counters, running_hashes, stack_depths,next_parents]
+    # return [string_str, label_str, prods_str, mem_proofs_str]
+
 def count_str_traversal(prod_arr, labels): 
     count = 0
     for prod in prod_arr:
@@ -277,8 +404,11 @@ def count_str_traversal(prod_arr, labels):
     return count
 
 
-def generate_all_prover_files(n, k, g=3):
-    [string_arr, label_arr, prod_arr, rule_arr] = naive_prods_full_witness_generator(n)
+
+def generate_all_prover_files_dfs_with_stack(n, k, g=3):
+    [string_arr, label_arr, prod_arr, rule_arr, stack, \
+                leaf_counters, running_hashes, stack_depths, next_parents] = \
+                    naive_prods_full_witness_generator_dfs_with_stack(n)
     # for out_str in out_strs:
     #     print(out_str + "\n")
     string_str = generate_arr_str("string", string_arr)
@@ -289,44 +419,47 @@ def generate_all_prover_files(n, k, g=3):
     out_strs = []
     for i in range(num_proofs):
         if i == 0:
-            prods_str = generate_prod_strings(prod_arr[0:k-1])
+            # prods_str = generate_prod_strings(prod_arr[0:k-1])
             # proofs=[merkle_prods[g] for _ in range(k-1)]
             # mem_proofs_str = ''.join(proofs)
             # print(prods_str)
             # print("******************")
             mem_proofs_str = generate_arr_str("mem_proofs_prod", rule_arr[:k-1])
-            out_strs = [string_str, label_str,  
-                prods_com, prods_str, mem_proofs_str]
-            with open('./base_parsing_circuit/Prover.toml', 'w') as file:
+            # print("i = 0")
+            # print(prod_arr)
+            prods_str2 = generate_prod_strings2(prod_arr[0:k-1], label_arr)
+            stack_str = generate_stack_str(stack[0:k-1])
+            out_strs = [string_str, prods_com, mem_proofs_str, prods_str2, stack_str]
+            with open('./dfs_stack_base/Prover.toml', 'w') as file:
                 for elt in out_strs:
                     file.write(elt + '\n')
-            with open('./base_parsing_circuit/Verifier.toml', 'w') as file:
-                file.write(string_str + '\n') 
-            # Open a file in write mode ('w')
-
-            prods_str2 = generate_prod_strings2(prod_arr[0:k-1], label_str)
-            out_strs = [string_str, prods_com, prods_str2, mem_proofs_str]
-            with open('./base_parsing_circuit_no_labels/Prover.toml', 'w') as file:
-                for elt in out_strs:
-                    file.write(elt + '\n')
-            with open('./base_parsing_circuit_no_labels/Verifier.toml', 'w') as file:
+            with open('./dfs_stack_base/Verifier.toml', 'w') as file:
                 file.write(string_str + '\n') 
             # Open a file in write mode ('w')
 
         else:
-            prods_str = generate_prod_strings2(prod_arr[i*k - 1:(i+1)*k - 1], label_str)
+            prods_str = generate_prod_strings2(prod_arr[i*k - 1:(i+1)*k - 1], label_arr)
             # print(prods_str)
             # proofs=[merkle_prods[g] for _ in range(k)]
             # mem_proofs_str = ''.join(proofs)
             mem_proofs_str = generate_arr_str("mem_proofs_prod", rule_arr[i*k - 1:(i+1)*k - 1])
+            stack_str = generate_stack_str(stack[i*k - 1:(i+1)*k - 1])
             last_pos = i*k - 2
-            traversal_count = count_str_traversal(prod_arr[:i*k - 1], label_arr)
-            node_counter=(prod_arr[last_pos][1] + 1 if prod_arr[last_pos][2]==0 else prod_arr[last_pos][2] + 1 )
-            previous_final_parent = "node_counter=" + str(node_counter)
-            start_prod_idx_str = "start_prod_idx=" + str(last_pos)
-            string_elt_count="string_elt_count=" + str(traversal_count)
+            # traversal_count = count_str_traversal(prod_arr[:i*k - 1], label_arr)
+            # node_counter=(prod_arr[last_pos][1] + 1 if prod_arr[last_pos][2]==0 else prod_arr[last_pos][2] + 1 )
+            # previous_final_parent = "node_counter=" + str(node_counter)
+            # start_prod_idx_str = "start_prod_idx=" + str(last_pos)
+            # string_elt_count="string_elt_count=" + str(traversal_count)
+            incoming_hash = running_hashes[i*k - 1]
+            stack_hash="stack_hash="+str(incoming_hash)
+            leaves_counted = leaf_counters[i*k - 1]
+            leaf_count="leaf_count="+str(leaves_counted)
+            incoming_stack_depth=stack_depths[i*k - 1]
+            stack_depth="stack_depth="+str(incoming_stack_depth)
+            next_parent_id = next_parents[i*k-1]
+            next_parent_index_inp="next_parent_index="+str(next_parent_id)
             out_strs = [string_str, label_str,  
-                previous_final_parent, start_prod_idx_str, string_elt_count, prods_com]
+                leaf_count, stack_hash, stack_depth, next_parent_index_inp,prods_com]
             os.makedirs('./prover_toml_files', exist_ok=True)
             os.makedirs('./verifier_toml_files', exist_ok=True)
             with open('./prover_toml_files/Prover.toml' + str(i), 'w') as file:
@@ -335,14 +468,22 @@ def generate_all_prover_files(n, k, g=3):
             with open('./prover_toml_files/prods' + str(i), 'w') as file:
                 file.write(mem_proofs_str + '\n')
                 file.write(prods_str + '\n')
+                file.write(stack_str + '\n')
             with open('./verifier_toml_files/Verifier.toml' + str(i), 'w') as file:
-                file.write(string_str + '\n')    
+                file.write(string_str + '\n')  
+                file.write(stack_depth + '\n')
+                file.write(stack_hash + '\n')
+                file.write(leaf_count + '\n')
+                file.write(next_parent_index_inp + '\n')
+
+
+
 
 
 def generate_all_prover_files_dfs(n, k, g=3):
     [string_arr, label_arr, prod_arr, rule_arr] = naive_prods_full_witness_generator_dfs(n)
     # for out_str in out_strs:
-    #     print(out_str + "\n")
+    #     // print(out_str + "\n")
     string_str = generate_arr_str("string", string_arr)
     label_str = generate_arr_str("labels", label_arr)
     prods_com="prods_com=\"" + mt_hashes[g] + "\""
@@ -354,8 +495,8 @@ def generate_all_prover_files_dfs(n, k, g=3):
             prods_str = generate_prod_strings(prod_arr[0:k-1])
             # proofs=[merkle_prods[g] for _ in range(k-1)]
             # mem_proofs_str = ''.join(proofs)
-            # print(prods_str)
-            # print("******************")
+            # # print(prods_str)
+            # # print("******************")
             mem_proofs_str = generate_arr_str("mem_proofs_prod", rule_arr[:k-1])
             out_strs = [string_str, label_str,  
                 prods_com, prods_str, mem_proofs_str]
@@ -376,8 +517,8 @@ def generate_all_prover_files_dfs(n, k, g=3):
             # Open a file in write mode ('w')
 
         else:
-            prods_str = generate_prod_strings2(prod_arr[i*k - 1:(i+1)*k - 1], label_str)
-            # print(prods_str)
+            prods_str = generate_prod_strings(prod_arr[i*k - 1:(i+1)*k - 1])
+            # # print(prods_str)
             # proofs=[merkle_prods[g] for _ in range(k)]
             # mem_proofs_str = ''.join(proofs)
             mem_proofs_str = generate_arr_str("mem_proofs_prod", rule_arr[i*k - 1:(i+1)*k - 1])
@@ -404,7 +545,7 @@ def generate_all_prover_files_dfs(n, k, g=3):
 def generate_all_prover_files_with_merkle_paths_dfs(n, k, g):
     [string_arr, label_arr, prod_arr, rule_arr] = naive_prods_full_witness_generator_dfs(n)
     # for out_str in out_strs:
-    #     print(out_str + "\n")
+    #     # print(out_str + "\n")
     string_str = generate_arr_str("string", string_arr)
     label_str = generate_arr_str("labels", label_arr)
     prods_com="prods_com=\"" + mt_hashes[g] + "\""
@@ -416,8 +557,8 @@ def generate_all_prover_files_with_merkle_paths_dfs(n, k, g):
             prods_str = generate_prod_strings(prod_arr[0:k-1])
             proofs=[merkle_prods[g] for _ in range(k-1)]
             mem_proofs_str = ''.join(proofs)
-            # print(prods_str)
-            # print("******************")
+            # # print(prods_str)
+            # # print("******************")
             # mem_proofs_str = generate_arr_str("mem_proofs_prod", rule_arr[:k-1])
             out_strs = [string_str, label_str,  
                 prods_com, prods_str, mem_proofs_str]
@@ -448,7 +589,7 @@ def generate_all_prover_files_with_merkle_paths_dfs(n, k, g):
 
         else:
             prods_str = generate_prod_strings(prod_arr[i*k - 1:(i+1)*k - 1])
-            # print(prods_str)
+            # # print(prods_str)
             proofs=[merkle_prods[g] for _ in range(k)]
             mem_proofs_str = ''.join(proofs)
             # mem_proofs_str = generate_arr_str("mem_proofs_prod", rule_arr[i*k - 1:(i+1)*k - 1])
@@ -471,75 +612,7 @@ def generate_all_prover_files_with_merkle_paths_dfs(n, k, g):
             with open('./verifier_toml_files/Verifier.toml' + str(i), 'w') as file:
                 file.write(string_str + '\n')  
 
-def generate_all_prover_files_with_merkle_paths(n, k, g):
-    [string_arr, label_arr, prod_arr, rule_arr] = naive_prods_full_witness_generator(n)
-    # for out_str in out_strs:
-    #     print(out_str + "\n")
-    string_str = generate_arr_str("string", string_arr)
-    label_str = generate_arr_str("labels", label_arr)
-    prods_com="prods_com=\"" + mt_hashes[g] + "\""
-    num_proofs=int((2*n)/k)
 
-    out_strs = []
-    for i in range(num_proofs):
-        if i == 0:
-            prods_str = generate_prod_strings(prod_arr[0:k-1])
-            proofs=[merkle_prods[g] for _ in range(k-1)]
-            mem_proofs_str = ''.join(proofs)
-            # print(prods_str)
-            # print("******************")
-            # mem_proofs_str = generate_arr_str("mem_proofs_prod", rule_arr[:k-1])
-            out_strs = [string_str, label_str,  
-                prods_com, prods_str, mem_proofs_str]
-            with open('./base_parsing_circuit/Prover.toml', 'w') as file:
-                for elt in out_strs:
-                    file.write(elt + '\n')
-            with open('./base_parsing_circuit/Verifier.toml', 'w') as file:
-                file.write(string_str + '\n') 
-            # Open a file in write mode ('w')
-
-            prods_str2 = generate_prod_strings2(prod_arr[0:k-1], label_arr)
-            out_strs = [string_str, prods_com, prods_str2, mem_proofs_str]
-            with open('./base_parsing_circuit_no_labels/Prover.toml', 'w') as file:
-                for elt in out_strs:
-                    file.write(elt + '\n')
-            with open('./base_parsing_circuit_no_labels/Verifier.toml', 'w') as file:
-                file.write(string_str + '\n') 
-
-            mem_proofs_str2 = generate_arr_str("mem_proofs_prod", rule_arr[:k-1])
-            prods_str3 = generate_prod_strings2(prod_arr[0:k-1], label_arr)
-            out_strs = [string_str, prods_com, mem_proofs_str2, prods_str3]
-            with open('./base_dfs_parsing_no_mt/Prover.toml', 'w') as file:
-                for elt in out_strs:
-                    file.write(elt + '\n')
-            with open('./base_dfs_parsing_no_mt/Verifier.toml', 'w') as file:
-                file.write(string_str + '\n') 
-
-
-        else:
-            prods_str = generate_prod_strings(prod_arr[i*k - 1:(i+1)*k - 1])
-            # print(prods_str)
-            proofs=[merkle_prods[g] for _ in range(k)]
-            mem_proofs_str = ''.join(proofs)
-            # mem_proofs_str = generate_arr_str("mem_proofs_prod", rule_arr[i*k - 1:(i+1)*k - 1])
-            last_pos = i*k - 2
-            traversal_count = count_str_traversal(prod_arr[:i*k - 1], label_arr)
-            node_counter=(prod_arr[last_pos][1] + 1 if prod_arr[last_pos][2]==0 else prod_arr[last_pos][2] + 1 )
-            previous_final_parent = "node_counter=" + str(node_counter)
-            start_prod_idx_str = "start_prod_idx=" + str(last_pos)
-            string_elt_count="string_elt_count=" + str(traversal_count)
-            out_strs = [string_str, label_str,  
-                previous_final_parent, start_prod_idx_str, string_elt_count, prods_com]
-            os.makedirs('./prover_toml_files', exist_ok=True)
-            os.makedirs('./verifier_toml_files', exist_ok=True)
-            with open('./prover_toml_files/Prover.toml' + str(i), 'w') as file:
-                for elt in out_strs:
-                    file.write(elt + '\n')    
-            with open('./prover_toml_files/prods' + str(i), 'w') as file:
-                file.write(mem_proofs_str + '\n')
-                file.write(prods_str + '\n')
-            with open('./verifier_toml_files/Verifier.toml' + str(i), 'w') as file:
-                file.write(string_str + '\n')  
 
 ########## JSON writing functions
 
@@ -581,8 +654,12 @@ def generate_and_write_productions_json(string_len, filename):
 n_from_sys = int(sys.argv[1])
 k_from_sys = int(sys.argv[2])
 g_from_sys = int(sys.argv[3])
-print(generate_all_prover_files_with_merkle_paths_dfs(n_from_sys, k_from_sys, g_from_sys))
-
+# # print(generate_all_prover_files_with_merkle_paths_dfs(n_from_sys, k_from_sys, g_from_sys))
 
 
 # generate_all_prover_files_with_merkle_paths(n_from_sys, k_from_sys, g_from_sys)
+
+
+# test_out = naive_prods_full_witness_generator_dfs_with_stack(n_from_sys)
+# # print(test_out[4])
+generate_all_prover_files_dfs_with_stack(n_from_sys, k_from_sys, g_from_sys)

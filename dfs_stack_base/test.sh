@@ -2,7 +2,8 @@
 set -eux
 nargo execute dfs_stack_base --package dfs_stack_base
 
-BACKEND=../bbnew
+BACKEND=~/.bb/bb
+#../bbnew
 
 $BACKEND write_vk -b ../target/dfs_stack_base.json -o ../target/vk   
 mkdir -p proofs

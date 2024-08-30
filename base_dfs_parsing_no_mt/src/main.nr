@@ -116,7 +116,7 @@ fn parseTreeCheckerProdsNaive2(
     prods: [Production2; K - 1],
     mem_proofs_prod: [Field; K-1],
     // production_com: Field,
-) -> (Field, bool) {
+) -> (Field, Field, bool) {
     // FIXME: Right now, none of the checks ensure that 
     // the root node is in the set of start symbols.
     let mut output = true;
@@ -129,19 +129,8 @@ fn parseTreeCheckerProdsNaive2(
     stack.push((root_node.label, root_node.idx));
 
     for i in 0..K - 1 {
-        print("Stack = ");
-        print(stack);
-        print("\n");
+
         let current_parent = stack.pop();
-
-        print("Popped item = ");
-        print(current_parent);
-        print("\n");
-
-        print("Stack after pop = ");
-        print(stack);
-        print("\n");
-
         let prod = prods[i];
         let parent = prod.parent;
         let left_child = prod.childL;
@@ -155,33 +144,11 @@ fn parseTreeCheckerProdsNaive2(
         let counter_correctness = (parent_id == next_parent_index);
         output = output * correct_pop * counter_correctness;
 
-        print("correct pop 1 = ");
-        print((current_parent.0 == parent.label));
-        print("\n");
-        print(current_parent.0);
-        print("\n");
-        print(parent.label);
-        print("\n");
-
-
-        print("Correct pop 2 = ");
-        print((current_parent.1 == parent_id));
-        print("\n");
-        print(current_parent.1);
-        print("\n");
-        print(parent.idx);
-        print("\n");
-
-        print("Counter correctness = ");
-        print(counter_correctness);
-        print("\n");
+        
 
 
         output = output * ((parent_id + 1) == child_L_id);
 
-        print("Parent id = child_id - 1 test = ");
-        print((parent_id + 1 == child_L_id));
-        print("\n");
 
         if child_R_id == 0 {
             // This is the case where we are dealing with a NT --> T rule
@@ -196,28 +163,11 @@ fn parseTreeCheckerProdsNaive2(
             // This and the other node counter check, above ensures that all child nodes
             // appear in exactly one production and that each non-root node
             // has a parent. 
-            print("Right child pre-push = ");
-            print(right_child.label);
-            print(",");
-            print(right_child.idx);
-            print("\n");
             stack.push((right_child.label, right_child.idx));
             // stack.insert(stack.len(), (right_child.label, right_child.idx));
-            print("Stack after one push = ");
-            print(stack);
-            print("\n");
             stack.push((left_child.label, left_child.idx));
             // stack.insert(stack.len(), (left_child.label, left_child.idx));
-            print("Stack after second push = ");
-            print(stack);
-            print("\n");
-
-            print("Right child");
-            print(right_child);
-            print("\n");
-            print("Left child");
-            print(left_child);
-            print("\n");
+          
             next_parent_index = child_L_id;
         }
         
@@ -236,7 +186,7 @@ fn parseTreeCheckerProdsNaive2(
     // Check that parent nodes are within range upper bound.
     // let parent_range_final_check = (latest_parent.lt((3*N - 1) as Field));
     // output = output * leaves_check  * nodes_check * parent_range_final_check;
-    (leaf_count, output)
+    (next_parent_index, leaf_count, output)
 }
 
 
@@ -254,13 +204,7 @@ fn main(
     // prods_com: Field,
 ) -> pub Field {
 
-    let (leaf_count, out_bit) = parseTreeCheckerProdsNaive2(string, prods, mem_proofs_prod);
-    print("Leaf count = ");
-    print(leaf_count);
-    print("\n");
-    print("Out bit = ");
-    print(out_bit);
-    print("\n");
+    let (_, leaf_count, out_bit) = parseTreeCheckerProdsNaive2(string, prods, mem_proofs_prod);
     assert(out_bit == true);
     leaf_count
    

@@ -1,13 +1,13 @@
 #!/bin/bash
 set -eux
-nargo execute dfs_stack_fully_rec --package dfs_stack_fully_rec
+nargo execute dfs_stack_full_rec --package dfs_stack_full_rec
 
 BACKEND=../bbnew
 
-$BACKEND write_vk -b ../target/dfs_stack_fully_rec.json -o ../target/vk   
+$BACKEND write_vk -b ../target/dfs_stack_full_rec.json -o ../target/vk   
 mkdir -p proofs
 start=$(python3 -c "import time; print(time.time_ns())")
-$BACKEND prove -b ../target/dfs_stack_fully_rec.json -w ../target/dfs_stack_fully_rec.gz -o ./proofs/proof
+$BACKEND prove -b ../target/dfs_stack_full_rec.json -w ../target/dfs_stack_full_rec.gz -o ./proofs/proof
 end=$(python3 -c "import time; print(time.time_ns())")
 elapsed=$(echo "scale=9; ($end - $start) / 1000000000" | bc)
 echo "Proving took $elapsed s" 

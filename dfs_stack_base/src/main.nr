@@ -22,8 +22,8 @@ Rules:
  */
 use dep::std;
 
-global N = 4;
-global K = 8;
+global N = 8192;
+global K = 16384;
 global Log_Rules = 3;
 
 global S = 1;
@@ -158,6 +158,7 @@ fn parseTreeCheckerProdsNaive2(
     // labels: [Field; 3*N - 1],
     prods: [Production2; K - 1],
     mem_proofs_prod: [Field; K-1],
+    stack_expected_popped_vals: [StackTuple; K-1],
     // production_com: Field,
 ) -> (Field, Field, Field, Field, bool) {
     // FIXME: Right now, none of the checks ensure that 
@@ -168,26 +169,50 @@ fn parseTreeCheckerProdsNaive2(
     let mut stack_depth = 0;
 
     // let mut stack: Vec<(Field, Field)> = Vec::new();
-    let mut local_stack: BoundedVec<(Field, Field, Field), K> = BoundedVec::new();
+    // let mut local_stack: BoundedVec<(Field, Field, Field), K> = BoundedVec::new();
     let root_node = prods[0].parent;
-    let mut running_hash = 0; 
+    // let mut running_hash = 0; 
 
-    local_stack.push((root_node.label, root_node.idx, running_hash));
+    // local_stack.push((root_node.label, root_node.idx, running_hash));
+    let mut running_hash = made_up_hash_fn(root_node, 0);
     stack_depth = stack_depth + 1;
-    running_hash = made_up_hash_fn(root_node, 0);
+    
 
     
     for i in 0..K - 1 {
-        let popped_item = local_stack.pop();
+        // let popped_item = local_stack.pop();
         stack_depth = stack_depth - 1;
 
-        let help_tuple = StackTuple::new(popped_item.1, popped_item.0, popped_item.2);
+        // let help_tuple = StackTuple::new(popped_item.1, popped_item.0, popped_item.2);
         // help_tuple.print_tuple();
-        print(help_tuple);
-        print(",\n");
         
+        let help_tuple = stack_expected_popped_vals[i];
         let prod = prods[i];
+        // print("\n****\nFrom input stack\n");
+        // print(help_tuple);
+        // print(",\n");
+
+        // print("From local stack\n");
+        // print(help_tuple);
+        // print(",\n");
+        
+        
         let parent = prod.parent;
+        let hash_preimage = help_tuple.hash_preimage;
+        let stack_integrity = (made_up_hash_fn(parent, hash_preimage) == running_hash);
+        // print("i = ");
+        // print(i);
+        // print("\nrunning hash = ");
+        // print(running_hash);
+        running_hash = hash_preimage;
+        // let h = made_up_hash_fn(parent, hash_preimage);
+        // print(" | hash computed = ");
+        // print(h);
+        // print("\n");
+        // running_hash = hash_preimage;
+        output = stack_integrity * output;
+
+
         let left_child = prod.childL;
         let right_child = prod.childR;
 
@@ -195,17 +220,17 @@ fn parseTreeCheckerProdsNaive2(
 		let child_L_id = left_child.idx;
         let child_R_id = right_child.idx;
 
-        let correct_pop = (popped_item.0 == parent.label) * (popped_item.1 == parent_id);
+        let correct_pop = (help_tuple.label == parent.label) * (help_tuple.idx == parent_id);
         let counter_correctness = (parent_id == next_parent_index);
         output = output * correct_pop * counter_correctness;
         output = output * ((parent_id + 1) == child_L_id);
 
-        let hash_preimage = popped_item.2;
-        let stack_integrity = (made_up_hash_fn(parent, hash_preimage) == running_hash);
-        output = stack_integrity * output;
+        
+        
+        
 
         
-        running_hash = hash_preimage;
+        
 
 
         if child_R_id == 0 {
@@ -221,12 +246,26 @@ fn parseTreeCheckerProdsNaive2(
             // This and the other node counter check, above ensures that all child nodes
             // appear in exactly one production and that each non-root node
             // has a parent. 
-            local_stack.push((right_child.label, right_child.idx, running_hash));
-            running_hash = made_up_hash_fn(right_child, running_hash);
+            // local_stack.push((right_child.label, right_child.idx, running_hash));
+
+            
+            
+            
+            // print("\nPushed item = ");
+            print(running_hash);
             stack_depth = stack_depth + 1;
+            running_hash = made_up_hash_fn(right_child, running_hash);
+            // print("\nRunning hash 1=");
+            // print(running_hash);
+            // print("\n");
             // stack.insert(stack.len(), (right_child.label, right_child.idx));
-            local_stack.push((left_child.label, left_child.idx, running_hash));
+            // local_stack.push((left_child.label, left_child.idx, running_hash));
+            // print("Pushed item = ");
+            // print((left_child.label, left_child.idx, running_hash));
             running_hash = made_up_hash_fn(left_child, running_hash);
+            // print("\nRunning hash 2=");
+            // print(running_hash);
+            // print("\n");
             stack_depth = stack_depth + 1;
             // stack.insert(stack.len(), (left_child.label, left_child.idx));
             next_parent_index = child_L_id;
@@ -237,6 +276,13 @@ fn parseTreeCheckerProdsNaive2(
         let prod_check = (rule == rules[mem_proofs_prod[i]]);
         
         output = output * prod_check;
+
+        // print("\nLeaf count = ");
+        // print(leaf_count);
+        // print("\nStack depth = ");
+        // print(stack_depth);
+        // print("\nRunning hash");
+        // print(running_hash);
     }
 	// Checks that all child nodes are in the correct range.
     // Note that we already checked that the start node is 0.
@@ -263,10 +309,11 @@ fn main(
     string: pub [Field; N],
     prods: [Production2; K - 1],
     mem_proofs_prod:[Field; K - 1],
+    stack_expected_popped_vals: [StackTuple; K - 1]
     // prods_com: Field,
 ) -> pub (Field, Field, Field, Field) {
 
-    let (next_parent_index, leaf_count, running_hash, stack_depth, out_bit) = parseTreeCheckerProdsNaive2(string, prods, mem_proofs_prod);
+    let (next_parent_index, leaf_count, running_hash, stack_depth, out_bit) = parseTreeCheckerProdsNaive2(string, prods, mem_proofs_prod, stack_expected_popped_vals);
     assert(out_bit == true);
     (next_parent_index, leaf_count, running_hash, stack_depth)
    
@@ -275,7 +322,8 @@ fn main(
 
 /*
 Commenting since this test is for fixed N and K params
-*/
+
+
 #[test]
 fn test_parse_tree_checker_prods_naive() {
     let base_prod = Production2{
@@ -322,10 +370,19 @@ fn test_parse_tree_checker_prods_naive() {
         childR: Node2::new(0, 0),
     };
 
+    let stack_expected_popped_vals = [StackTuple { idx: 0x00, label: 0x01, hash_preimage: 0x00 },
+            StackTuple { idx: 0x01, label: 0x02, hash_preimage: 0x08 },
+            StackTuple { idx: 0x02, label: 0x03, hash_preimage: 0x06 },
+            StackTuple { idx: 0x04, label: 0x04, hash_preimage: 0x08 },
+            StackTuple { idx: 0x06, label: 0x02, hash_preimage: 0x00 },
+            StackTuple { idx: 0x07, label: 0x03, hash_preimage: 0x03 },
+            StackTuple { idx: 0x09, label: 0x04, hash_preimage: 0x00 }];
     let (next_parent_index, leaf_count, _, _, out_bit) = parseTreeCheckerProdsNaive2([a, c, a, c], 
 	prods,
-	[0, 2, 3, 4, 2, 3, 4]);
+	[0, 2, 3, 4, 2, 3, 4],
+    stack_expected_popped_vals);
     assert(next_parent_index == (11 as Field));
     assert(leaf_count == (4 as Field));
     assert(out_bit == true);
 }
+*/
