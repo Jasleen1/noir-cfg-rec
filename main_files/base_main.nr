@@ -393,7 +393,6 @@ fn parseTreeCheckerProdsNaive2(
     mem_proofs_prod: [MerkleProofProductions; K - 1],
     production_com: Field,
 ) -> (Field, Field, bool) {
-    println(prods);
     // FIXME: Right now, none of the checks ensure that 
     // the root node is in the set of start symbols.
     let mut output = true;
