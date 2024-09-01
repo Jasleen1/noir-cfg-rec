@@ -24,6 +24,7 @@ echo "key_hash=\"$VK_HASH\"" >> $VK_FILE
 nargo compile --silence-warnings --package dfs_stack_rec_1
 $BACKEND write_vk -b ./target/dfs_stack_rec_1.json  -o ./target/vk_base_rec
 $BACKEND vk_as_fields -k ./target/vk_base_rec -o ./target/vk_base_rec_as_fields
+echo "Written vk as fields for first recursive parsing circuit"
 
 VK_HASH=$(jq -r '.[0]' ./target/vk_base_rec_as_fields)
 VK_AS_FIELDS=$(jq -r '.[1:]' ./target/vk_base_rec_as_fields)
@@ -44,3 +45,5 @@ VK_AS_FIELDS=$(jq -r '.[1:]' ./target/vk_rec_as_fields)
 VK_FILE=./vks/rec_vk
 echo "verification_key=$VK_AS_FIELDS"  > $VK_FILE
 echo "key_hash=\"$VK_HASH\"" >> $VK_FILE
+
+echo "Written all vks"

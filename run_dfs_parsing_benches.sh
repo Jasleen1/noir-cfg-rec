@@ -3,8 +3,8 @@
 
 low_grammar_size=3
 high_grammar_size=3
-low_log_n=5
-high_log_n=20
+low_log_n=10
+high_log_n=10
 
 num_trials=0
 
@@ -21,8 +21,8 @@ do
     for pow in $(seq $low_log_n $high_log_n) 
     do
         N=$((2**$pow))
-        # low_log_k=4
-        low_log_k=$(($pow + 1))
+        low_log_k=5
+        # low_log_k=$(($pow + 1))
         high_log_k=$(($pow + 1))
         # high_log_k=3
         #$pow

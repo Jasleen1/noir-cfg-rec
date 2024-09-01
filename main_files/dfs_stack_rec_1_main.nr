@@ -124,6 +124,14 @@ fn made_up_hash_fn(x: Node2, y: Field) -> Field {
     ((total as u32) % 10) as Field
 }
 
+fn poseidon_hash_fn(x: Node2, y: Field) -> Field {
+    std::hash::poseidon::bn254::hash_4([x.label, x.idx, y, 0])
+}
+
+fn used_hash_fn(x: Node2, y: Field) -> Field {
+    poseidon_hash_fn(x, y)
+    // made_up_hash_fn(x, y)
+}
 
 // Same as parseTreeChecker but takes in positions of productions, instead of edges. 
 fn parseTreeCheckerProdsNaive2(
@@ -176,7 +184,7 @@ fn parseTreeCheckerProdsNaive2(
         // print("\n");
 
         let hash_preimage = popped_item.hash_preimage;
-        let stack_integrity = (made_up_hash_fn(parent, hash_preimage) == running_hash);
+        let stack_integrity = (used_hash_fn(parent, hash_preimage) == running_hash);
         // print("i = ");
         // print(i);
         // print(" stack integrity = ");
@@ -214,11 +222,11 @@ fn parseTreeCheckerProdsNaive2(
             // appear in exactly one production and that each non-root node
             // has a parent. 
             print(running_hash);
-            //running_hash = made_up_hash_fn(right_child, running_hash);
-            running_hash = made_up_hash_fn(right_child, hash_preimage);
+            //running_hash = used_hash_fn(right_child, running_hash);
+            running_hash = used_hash_fn(right_child, hash_preimage);
             stack_depth = stack_depth + 1;
             // stack.insert(stack.len(), (right_child.label, right_child.idx));
-            running_hash = made_up_hash_fn(left_child, running_hash);
+            running_hash = used_hash_fn(left_child, running_hash);
             stack_depth = stack_depth + 1;
             // stack.insert(stack.len(), (left_child.label, left_child.idx));
 

@@ -1,0 +1,20 @@
+[package]
+name = "test_poseidon"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+crate-type = ["cdylib"]
+name = "test_poseidon"
+path = "src/lib.rs"
+
+
+[dependencies]
+light-poseidon = "=0.2.0"
+ark-bn254 = "0.4.0"
+ark-ff = "0.4.2"
+hex = "0.4.3"
+pyo3 = { version = "0.18", features = ["extension-module"] }
+

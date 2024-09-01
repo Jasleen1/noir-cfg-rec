@@ -30,15 +30,15 @@ mt_hashes[20]="0x2fdf536222da76b4eb9919e950049190bf2919b8560a911b761b3ec405de39a
 
 # Hashed with "leaf=1"
 merkle_prods={}
-merkle_prods[3]="[[mem_proofs_prod]]\nhashpath=[0x02, 0x03, 0x04]\n index=3\n"
-merkle_prods[4]="[[mem_proofs_prod]]\nhashpath=[0x02, 0x03, 0x04, 0x05]\n index=3\n"
-merkle_prods[5]="[[mem_proofs_prod]]\nhashpath=[0x02, 0x03, 0x04, 0x05, 0x06]\n index=3\n"
-merkle_prods[6]="[[mem_proofs_prod]]\nhashpath=[0x02, 0x03, 0x04, 0x05, 0x06, 0x07]\n index=3\n"
-merkle_prods[7]="[[mem_proofs_prod]]\nhashpath=[0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08]\n index=3\n"
-merkle_prods[8]="[[mem_proofs_prod]]\nhashpath=[0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09]\n index=3\n"
-merkle_prods[9]="[[mem_proofs_prod]]\nhashpath=[0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a]\n index=3\n"
-merkle_prods[10]="[[mem_proofs_prod]]\nhashpath=[0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b]\n index=3\n"
-merkle_prods[20]="[[mem_proofs_prod]]\nhashpath=[0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15]\n index=3\n"
+merkle_prods[3]="[[mem_proofs_prod]]\nindex=3\n hashpath=[0x02, 0x03, 0x04]\n"
+merkle_prods[4]="[[mem_proofs_prod]]\nindex=3\nhashpath=[0x02, 0x03, 0x04, 0x05]\n"
+merkle_prods[5]="[[mem_proofs_prod]]\nindex=3\nhashpath=[0x02, 0x03, 0x04, 0x05, 0x06]\n"
+merkle_prods[6]="[[mem_proofs_prod]]\nindex=3\nhashpath=[0x02, 0x03, 0x04, 0x05, 0x06, 0x07]\n"
+merkle_prods[7]="[[mem_proofs_prod]]\nindex=3\nhashpath=[0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08]\n"
+merkle_prods[8]="[[mem_proofs_prod]]\nindex=3\nhashpath=[0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09]\n"
+merkle_prods[9]="[[mem_proofs_prod]]\nindex=3\nhashpath=[0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a]\n"
+merkle_prods[10]="[[mem_proofs_prod]]\nindex=3\nhashpath=[0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b]\n"
+merkle_prods[20]="[[mem_proofs_prod]]\nindex=3\nhashpath=[0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15]\n"
 
 
 def stringify_calculated_arr(input_arr):
@@ -469,14 +469,14 @@ def generate_all_prover_files_with_merkle_paths(n, k, g):
             with open('./base_parsing_circuit_no_labels/Verifier.toml', 'w') as file:
                 file.write(string_str + '\n') 
 
-            mem_proofs_str2 = generate_arr_str("mem_proofs_prod", rule_arr[:k-1])
-            prods_str3 = generate_prod_strings2(prod_arr[0:k-1], label_arr)
-            out_strs = [string_str, prods_com, mem_proofs_str2, prods_str3]
-            with open('./base_parsing_circuit_no_labels_no_mt/Prover.toml', 'w') as file:
-                for elt in out_strs:
-                    file.write(elt + '\n')
-            with open('./base_parsing_circuit_no_labels_no_mt/Verifier.toml', 'w') as file:
-                file.write(string_str + '\n') 
+            # mem_proofs_str2 = generate_arr_str("mem_proofs_prod", rule_arr[:k-1])
+            # prods_str3 = generate_prod_strings2(prod_arr[0:k-1], label_arr)
+            # out_strs = [string_str, prods_com, mem_proofs_str2, prods_str3]
+            # with open('./base_parsing_circuit_no_labels_no_mt/Prover.toml', 'w') as file:
+            #     for elt in out_strs:
+            #         file.write(elt + '\n')
+            # with open('./base_parsing_circuit_no_labels_no_mt/Verifier.toml', 'w') as file:
+            #     file.write(string_str + '\n') 
 
 
         else:
@@ -539,13 +539,13 @@ def generate_and_write_productions_json(string_len, filename):
     with open(filename + '.json', 'w') as file:
         file.write(out_str)
 
-generate_and_write_productions_json(4, "test")
+# generate_and_write_productions_json(4, "test")
 
-# n_from_sys = int(sys.argv[1])
-# k_from_sys = int(sys.argv[2])
-# g_from_sys = int(sys.argv[3])
-# # generate_all_prover_files(n_from_sys, k_from_sys)
+n_from_sys = int(sys.argv[1])
+k_from_sys = int(sys.argv[2])
+g_from_sys = int(sys.argv[3])
+# generate_all_prover_files(n_from_sys, k_from_sys)
 
 
 
-# generate_all_prover_files_with_merkle_paths(n_from_sys, k_from_sys, g_from_sys)
+generate_all_prover_files_with_merkle_paths(n_from_sys, k_from_sys, g_from_sys)

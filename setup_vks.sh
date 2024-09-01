@@ -1,14 +1,17 @@
-BACKEND=~/.bb/bb
+BACKEND="$1"
 
 BASE_CIRC=./base_parsing_circuit
 BASE_REC_CIRC=./base_rec_parsing_circuit
 REC_CIRC=./rec_parsing_circuit
 
 mkdir -p vks
+mkdir -p target
 #### Compile the first package and write its vks
 nargo compile --silence-warnings --package base_parsing_circuit
 $BACKEND write_vk -b ./target/base_parsing_circuit.json  -o ./target/vk_base
+echo "Written vk for base parsing circuit"
 $BACKEND vk_as_fields -k ./target/vk_base -o ./target/vk_base_as_fields
+echo "Written vk as fields for base parsing circuit"
 
 VK_HASH=$(jq -r '.[0]' ./target/vk_base_as_fields)
 VK_AS_FIELDS=$(jq -r '.[1:]' ./target/vk_base_as_fields)

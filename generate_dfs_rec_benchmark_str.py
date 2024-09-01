@@ -1,6 +1,8 @@
+import binascii
 from math import floor
 import sys 
 import os
+from test_poseidon import poseidon_hash_4, poseidon_hash_from_c_bytes
 
 sys.setrecursionlimit(100000)
 
@@ -188,7 +190,7 @@ def bfs_parse_tree(root_node, thing_to_do_at_node, extra_args=None):
     
 def dfs_parse_tree_with_auth_stack(root_node, thing_to_do_at_stack_item, hash_fn_to_use, stack_trackers, extra_args=None):
     (leaf_counters, running_hashes,stack_depths,next_parent_index) = stack_trackers
-    running_hash = 0 
+    running_hash = '00'
     # stack_depths.append(0)
     running_hashes.append(running_hash)
     stack = [(root_node, running_hash)]
@@ -335,7 +337,7 @@ def generate_stack_str(stack_arr):
         label = item[1]
         hash_preimage = item[2]
         out_str += "[[stack_expected_popped_vals]]\nidx=" + str(idx) + "\nlabel=" + str(label) \
-            + "\nhash_preimage=" + str(hash_preimage) + "\n"
+            + "\nhash_preimage=\"0x" + str(hash_preimage) + "\"\n"
     return out_str
 
 
@@ -344,6 +346,14 @@ def made_up_hash_fn(node_and_previous_hash):
     node_id = node_and_previous_hash[1]
     previous_hash = node_and_previous_hash[2]
     return (node_label + node_id + previous_hash) % 10 
+
+def poseidon_hash_fn(node_and_previous_hash):
+    node_label = node_and_previous_hash[0]
+    node_id = node_and_previous_hash[1]
+    previous_hash = bytes.fromhex(node_and_previous_hash[2]).ljust(32, b'\0')
+    return poseidon_hash_from_c_bytes(node_label, node_id, previous_hash, 0)
+
+    
 
 
 def naive_prods_full_witness_generator_dfs(string_len):
@@ -377,7 +387,8 @@ def naive_prods_full_witness_generator_dfs_with_stack(string_len):
     running_hashes = []
     stack_depths = []   
     next_parents=[] 
-    dfs_parse_tree_with_auth_stack(root_node, append_wits_dfs, made_up_hash_fn, (leaf_counters, running_hashes,stack_depths,next_parents), (label_arr, prod_arr,rule_arr,stack_arr))
+    dfs_parse_tree_with_auth_stack(root_node, append_wits_dfs, poseidon_hash_fn, (leaf_counters, running_hashes,stack_depths,next_parents), (label_arr, prod_arr,rule_arr,stack_arr))
+    # dfs_parse_tree_with_auth_stack(root_node, append_wits_dfs, made_up_hash_fn, (leaf_counters, running_hashes,stack_depths,next_parents), (label_arr, prod_arr,rule_arr,stack_arr))
     # string_str = generate_arr_str("string", string_arr)
     # label_str = generate_arr_str("labels", label_arr)
     # prods_str = generate_prod_strings(prod_arr)
@@ -451,7 +462,7 @@ def generate_all_prover_files_dfs_with_stack(n, k, g=3):
             # start_prod_idx_str = "start_prod_idx=" + str(last_pos)
             # string_elt_count="string_elt_count=" + str(traversal_count)
             incoming_hash = running_hashes[i*k - 1]
-            stack_hash="stack_hash="+str(incoming_hash)
+            stack_hash="stack_hash=\"0x"+str(incoming_hash)+"\""
             leaves_counted = leaf_counters[i*k - 1]
             leaf_count="leaf_count="+str(leaves_counted)
             incoming_stack_depth=stack_depths[i*k - 1]

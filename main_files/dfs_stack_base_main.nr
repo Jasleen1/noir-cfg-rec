@@ -114,13 +114,16 @@ struct Production2 {
 fn made_up_hash_fn(x: Node2, y: Field) -> Field {
     let x_sum = x.label + x.idx;
     let total = x_sum + y;
-    // print("total = ");
-    // print(total);
-    // print("; out = ");
-    // let output = ((total as u32) % 10) as Field;
-    // print(output);
-    // print("\n");
     ((total as u32) % 10) as Field
+}
+
+fn poseidon_hash_fn(x: Node2, y: Field) -> Field {
+    std::hash::poseidon::bn254::hash_4([x.label, x.idx, y, 0])
+}
+
+fn used_hash_fn(x: Node2, y: Field) -> Field {
+    poseidon_hash_fn(x, y)
+    // made_up_hash_fn(x, y)
 }
 
 struct StackTuple {
@@ -174,7 +177,7 @@ fn parseTreeCheckerProdsNaive2(
     // let mut running_hash = 0; 
 
     // local_stack.push((root_node.label, root_node.idx, running_hash));
-    let mut running_hash = made_up_hash_fn(root_node, 0);
+    let mut running_hash = used_hash_fn(root_node, 0);
     stack_depth = stack_depth + 1;
     
 
@@ -199,13 +202,13 @@ fn parseTreeCheckerProdsNaive2(
         
         let parent = prod.parent;
         let hash_preimage = help_tuple.hash_preimage;
-        let stack_integrity = (made_up_hash_fn(parent, hash_preimage) == running_hash);
+        let stack_integrity = (used_hash_fn(parent, hash_preimage) == running_hash);
         // print("i = ");
         // print(i);
         // print("\nrunning hash = ");
         // print(running_hash);
         running_hash = hash_preimage;
-        // let h = made_up_hash_fn(parent, hash_preimage);
+        // let h = used_hash_fn(parent, hash_preimage);
         // print(" | hash computed = ");
         // print(h);
         // print("\n");
@@ -254,7 +257,7 @@ fn parseTreeCheckerProdsNaive2(
             // print("\nPushed item = ");
             print(running_hash);
             stack_depth = stack_depth + 1;
-            running_hash = made_up_hash_fn(right_child, running_hash);
+            running_hash = used_hash_fn(right_child, running_hash);
             // print("\nRunning hash 1=");
             // print(running_hash);
             // print("\n");
@@ -262,7 +265,7 @@ fn parseTreeCheckerProdsNaive2(
             // local_stack.push((left_child.label, left_child.idx, running_hash));
             // print("Pushed item = ");
             // print((left_child.label, left_child.idx, running_hash));
-            running_hash = made_up_hash_fn(left_child, running_hash);
+            running_hash = used_hash_fn(left_child, running_hash);
             // print("\nRunning hash 2=");
             // print(running_hash);
             // print("\n");
