@@ -52,6 +52,8 @@ global rules = [
     (A, a, 0),   //3
     (C, c, 0),   //4
     (S, A, C),  //5
+    (S, A, C),  //5
+    (S, A, C),  //5
 ];
 
 // Just got this from noir's source code and changed the hash fn
@@ -223,9 +225,10 @@ fn parseTreeCheckerProdsNaive2(
 		let child_L_id = left_child.idx;
         let child_R_id = right_child.idx;
 
-        let correct_pop = (help_tuple.label == parent.label) * (help_tuple.idx == parent_id);
-        let counter_correctness = (parent_id == next_parent_index);
-        output = output * correct_pop * counter_correctness;
+        // let correct_pop = (help_tuple.label == parent.label) * (help_tuple.idx == parent_id);
+        // let counter_correctness = (parent_id == next_parent_index);
+        // output = output * correct_pop * counter_correctness;
+        output = (expected.label == parent.label) * (expected.idx == parent_id) * (parent_id == next_parent_index);
         output = output * ((parent_id + 1) == child_L_id);
 
         

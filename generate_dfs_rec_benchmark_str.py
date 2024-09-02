@@ -8,7 +8,8 @@ sys.setrecursionlimit(100000)
 
 N=32
 K=16
-
+R = True
+L = False
 
 mt_hashes={}
 mt_hashes[3]="0x0302bafdc1322e8c7c13a308ae1b1805e4f9cdb4fb007cca2e3b729797e17f31"
@@ -431,11 +432,11 @@ def generate_all_prover_files_dfs_with_stack(n, k, g=3):
     for i in range(num_proofs):
         if i == 0:
             # prods_str = generate_prod_strings(prod_arr[0:k-1])
-            # proofs=[merkle_prods[g] for _ in range(k-1)]
-            # mem_proofs_str = ''.join(proofs)
+            proofs=[merkle_prods[g] for _ in range(k-1)]
+            mem_proofs_str = ''.join(proofs)
             # print(prods_str)
             # print("******************")
-            mem_proofs_str = generate_arr_str("mem_proofs_prod", rule_arr[:k-1])
+            # mem_proofs_str = generate_arr_str("mem_proofs_prod", rule_arr[:k-1])
             # print("i = 0")
             # print(prod_arr)
             prods_str2 = generate_prod_strings2(prod_arr[0:k-1], label_arr)
@@ -451,9 +452,9 @@ def generate_all_prover_files_dfs_with_stack(n, k, g=3):
         else:
             prods_str = generate_prod_strings2(prod_arr[i*k - 1:(i+1)*k - 1], label_arr)
             # print(prods_str)
-            # proofs=[merkle_prods[g] for _ in range(k)]
-            # mem_proofs_str = ''.join(proofs)
-            mem_proofs_str = generate_arr_str("mem_proofs_prod", rule_arr[i*k - 1:(i+1)*k - 1])
+            proofs=[merkle_prods[g] for _ in range(k)]
+            mem_proofs_str = ''.join(proofs)
+            # mem_proofs_str = generate_arr_str("mem_proofs_prod", rule_arr[i*k - 1:(i+1)*k - 1])
             stack_str = generate_stack_str(stack[i*k - 1:(i+1)*k - 1])
             last_pos = i*k - 2
             # traversal_count = count_str_traversal(prod_arr[:i*k - 1], label_arr)
@@ -508,7 +509,9 @@ def generate_all_prover_files_dfs(n, k, g=3):
             # mem_proofs_str = ''.join(proofs)
             # # print(prods_str)
             # # print("******************")
-            mem_proofs_str = generate_arr_str("mem_proofs_prod", rule_arr[:k-1])
+            # mem_proofs_str = generate_arr_str("mem_proofs_prod", rule_arr[:k-1])
+            proofs=[merkle_prods[g] for _ in range(k-1)]
+            mem_proofs_str = ''.join(proofs)
             out_strs = [string_str, label_str,  
                 prods_com, prods_str, mem_proofs_str]
             with open('./base_parsing_circuit/Prover.toml', 'w') as file:
@@ -532,7 +535,9 @@ def generate_all_prover_files_dfs(n, k, g=3):
             # # print(prods_str)
             # proofs=[merkle_prods[g] for _ in range(k)]
             # mem_proofs_str = ''.join(proofs)
-            mem_proofs_str = generate_arr_str("mem_proofs_prod", rule_arr[i*k - 1:(i+1)*k - 1])
+            # mem_proofs_str = generate_arr_str("mem_proofs_prod", rule_arr[i*k - 1:(i+1)*k - 1])
+            proofs=[merkle_prods[g] for _ in range(k-1)]
+            mem_proofs_str = ''.join(proofs)
             last_pos = i*k - 2
             traversal_count = count_str_traversal(prod_arr[:i*k - 1], label_arr)
             node_counter=(prod_arr[last_pos][1] + 1 if prod_arr[last_pos][2]==0 else prod_arr[last_pos][2] + 1 )

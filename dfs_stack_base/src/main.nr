@@ -22,9 +22,10 @@ Rules:
  */
 use dep::std;
 
-global N = 8192;
-global K = 16384;
-global Log_Rules = 3;
+global N = 1024;
+global K = 2048;
+global Log_Rules = 10;
+// global rules = ;
 
 global S = 1;
 global Ac = 2;
@@ -45,17 +46,17 @@ global non_terminals = [
 	C, // 4
 ];
 
-global rules = [
-    (S, Ac, Ac),  //0 
-    (Ac, Ac, Ac), //1
-    (Ac, A, C),   //2
-    (A, a, 0),   //3
-    (C, c, 0),   //4
-    (S, A, C),  //5
-];
+// global rules = [
+//     (S, Ac, Ac),  //0 
+//     (Ac, Ac, Ac), //1
+//     (Ac, A, C),   //2
+//     (A, a, 0),   //3
+//     (C, c, 0),   //4
+//     (S, A, C),  //5
+// ];
 
 // Just got this from noir's source code and changed the hash fn
-fn compute_merkle_root_poseiden<D>(leaf: Field, index: Field, hash_path: [Field; D]) -> Field {
+fn compute_merkle_root_poseiden<let D: u32>(leaf: Field, index: Field, hash_path: [Field; D]) -> Field {
     let n = hash_path.len();
     let index_bits = index.to_le_bits(n as u32);
     let mut current = leaf;
@@ -72,6 +73,10 @@ fn compute_merkle_root_poseiden<D>(leaf: Field, index: Field, hash_path: [Field;
 }
 
 
+struct MerkleProofProductions {
+	index: Field,
+	hashpath: [Field; Log_Rules]
+}
 
 
 struct Production {
@@ -114,13 +119,16 @@ struct Production2 {
 fn made_up_hash_fn(x: Node2, y: Field) -> Field {
     let x_sum = x.label + x.idx;
     let total = x_sum + y;
-    // print("total = ");
-    // print(total);
-    // print("; out = ");
-    // let output = ((total as u32) % 10) as Field;
-    // print(output);
-    // print("\n");
     ((total as u32) % 10) as Field
+}
+
+fn poseidon_hash_fn(x: Node2, y: Field) -> Field {
+    std::hash::poseidon::bn254::hash_4([x.label, x.idx, y, 0])
+}
+
+fn used_hash_fn(x: Node2, y: Field) -> Field {
+    poseidon_hash_fn(x, y)
+    // made_up_hash_fn(x, y)
 }
 
 struct StackTuple {
@@ -154,12 +162,13 @@ impl StackTuple {
 
 // Same as parseTreeChecker but takes in positions of productions, instead of edges. 
 fn parseTreeCheckerProdsNaive2(
-    string: pub [Field; N],
+    string: [Field; N],
     // labels: [Field; 3*N - 1],
     prods: [Production2; K - 1],
-    mem_proofs_prod: [Field; K-1],
+    // mem_proofs_prod: [Field; K-1],
+    mem_proofs_prod: [MerkleProofProductions; K - 1],
     stack_expected_popped_vals: [StackTuple; K-1],
-    // production_com: Field,
+    production_com: Field,
 ) -> (Field, Field, Field, Field, bool) {
     // FIXME: Right now, none of the checks ensure that 
     // the root node is in the set of start symbols.
@@ -174,19 +183,22 @@ fn parseTreeCheckerProdsNaive2(
     // let mut running_hash = 0; 
 
     // local_stack.push((root_node.label, root_node.idx, running_hash));
-    let mut running_hash = made_up_hash_fn(root_node, 0);
-    stack_depth = stack_depth + 1;
+    let mut running_hash = 0;//used_hash_fn(root_node, 0);
+    // stack_depth = stack_depth + 1;
     
-
+    let mut expected = root_node;
+    // let mut pop_counter = 0;
     
     for i in 0..K - 1 {
+        // print("\ni=");
+        // print(i);
         // let popped_item = local_stack.pop();
-        stack_depth = stack_depth - 1;
+        // stack_depth = stack_depth - 1;
 
         // let help_tuple = StackTuple::new(popped_item.1, popped_item.0, popped_item.2);
         // help_tuple.print_tuple();
         
-        let help_tuple = stack_expected_popped_vals[i];
+        // let help_tuple = expected;//stack_expected_popped_vals[i];
         let prod = prods[i];
         // print("\n****\nFrom input stack\n");
         // print(help_tuple);
@@ -198,19 +210,19 @@ fn parseTreeCheckerProdsNaive2(
         
         
         let parent = prod.parent;
-        let hash_preimage = help_tuple.hash_preimage;
-        let stack_integrity = (made_up_hash_fn(parent, hash_preimage) == running_hash);
+        // let hash_preimage = help_tuple.hash_preimage;
+        // let stack_integrity = (used_hash_fn(parent, hash_preimage) == running_hash);
         // print("i = ");
         // print(i);
         // print("\nrunning hash = ");
         // print(running_hash);
-        running_hash = hash_preimage;
-        // let h = made_up_hash_fn(parent, hash_preimage);
+        // running_hash = hash_preimage;
+        // let h = used_hash_fn(parent, hash_preimage);
         // print(" | hash computed = ");
         // print(h);
         // print("\n");
         // running_hash = hash_preimage;
-        output = stack_integrity * output;
+        // output = stack_integrity * output;
 
 
         let left_child = prod.childL;
@@ -220,18 +232,27 @@ fn parseTreeCheckerProdsNaive2(
 		let child_L_id = left_child.idx;
         let child_R_id = right_child.idx;
 
-        let correct_pop = (help_tuple.label == parent.label) * (help_tuple.idx == parent_id);
-        let counter_correctness = (parent_id == next_parent_index);
-        output = output * correct_pop * counter_correctness;
-        output = output * ((parent_id + 1) == child_L_id);
+        // let correct_pop = (help_tuple.label == parent.label) * (help_tuple.idx == parent_id);
+        // let counter_correctness = (parent_id == next_parent_index);
+        // output = output * correct_pop * counter_correctness;
+        output = (expected.label == parent.label) * (expected.idx == parent_id) * (parent_id == next_parent_index) * ((parent_id + 1) == child_L_id);
+        // print("\nOutput 1 = ");
+        // print(output);
+        // output = output * ((parent_id + 1) == child_L_id);
+        // print("\nOutput 2 = ");
+        // print(output);
+    
 
-        
-        
-        
+        // pop_counter = pop_counter + 1;
 
-        
-        
 
+        let prod_proof=mem_proofs_prod[i];
+        let hash_path = prod_proof.hashpath;
+        let index=prod_proof.index;
+        let computed_hash = compute_merkle_root_poseiden(1, index, hash_path);
+        output = output * (computed_hash == production_com);
+        
+        
 
         if child_R_id == 0 {
             // This is the case where we are dealing with a NT --> T rule
@@ -241,6 +262,32 @@ fn parseTreeCheckerProdsNaive2(
             next_parent_index = child_L_id + 1;
             leaf_count = leaf_count + 1;
             output = output * terminal_check;
+            // print("\nOutput 3 = ");
+            // print(output);
+
+            if i < (K - 2) {
+                let popped_item = stack_expected_popped_vals[i+1];
+                // #TODO check stack integrity here and reset the running hash
+                expected = Node2::new(popped_item.label, popped_item.idx);
+                let hash_preimage = popped_item.hash_preimage;
+                
+                // print("\nPopped item = ");
+                // print(popped_item);
+                // print("\nRunning hash = ");
+                // print(running_hash);
+
+                // let stack_integrity = (used_hash_fn(expected, hash_preimage) == running_hash);
+                output = output * (used_hash_fn(expected, hash_preimage) == running_hash);
+                running_hash = hash_preimage;
+                stack_depth = stack_depth - 1; 
+                // output = stack_integrity * output;
+                
+                // print("\nOutput 4 = ");
+                // print(output);
+                
+            }
+            
+
         }
         else {
             // This and the other node counter check, above ensures that all child nodes
@@ -251,10 +298,14 @@ fn parseTreeCheckerProdsNaive2(
             
             
             
-            // print("\nPushed item = ");
+            // print("\nRunning hash before right push = ");
             print(running_hash);
             stack_depth = stack_depth + 1;
-            running_hash = made_up_hash_fn(right_child, running_hash);
+            running_hash = used_hash_fn(right_child, running_hash);
+            // print("\nItem we're pushing = ");
+            // print(right_child);
+            // print("\nRunning hash after right push = ");
+            // print(running_hash);
             // print("\nRunning hash 1=");
             // print(running_hash);
             // print("\n");
@@ -262,20 +313,25 @@ fn parseTreeCheckerProdsNaive2(
             // local_stack.push((left_child.label, left_child.idx, running_hash));
             // print("Pushed item = ");
             // print((left_child.label, left_child.idx, running_hash));
-            running_hash = made_up_hash_fn(left_child, running_hash);
+            // running_hash = used_hash_fn(left_child, running_hash);
             // print("\nRunning hash 2=");
             // print(running_hash);
             // print("\n");
-            stack_depth = stack_depth + 1;
+            // stack_depth = stack_depth + 1;
             // stack.insert(stack.len(), (left_child.label, left_child.idx));
             next_parent_index = child_L_id;
+            expected = left_child;
         }
         
-        let rule = (parent.label as Field, left_child.label as Field, right_child.label as Field);
+        // let rule = (parent.label as Field, left_child.label as Field, right_child.label as Field);
         // This finally checks that the production is valid.
-        let prod_check = (rule == rules[mem_proofs_prod[i]]);
+        // let prod_check = (rule == rules[mem_proofs_prod[i]]);
         
-        output = output * prod_check;
+        // output = output * prod_check;
+
+        // output = output * (rule == rules[mem_proofs_prod[i]]);
+        // print("\nOutput 5 = ");
+        // print(output);
 
         // print("\nLeaf count = ");
         // print(leaf_count);
@@ -308,12 +364,12 @@ fn parseTreeCheckerProdsNaive2(
 fn main(
     string: pub [Field; N],
     prods: [Production2; K - 1],
-    mem_proofs_prod:[Field; K - 1],
-    stack_expected_popped_vals: [StackTuple; K - 1]
-    // prods_com: Field,
+    mem_proofs_prod:[MerkleProofProductions; K - 1],
+    stack_expected_popped_vals: [StackTuple; K - 1],
+    prods_com: Field,
 ) -> pub (Field, Field, Field, Field) {
 
-    let (next_parent_index, leaf_count, running_hash, stack_depth, out_bit) = parseTreeCheckerProdsNaive2(string, prods, mem_proofs_prod, stack_expected_popped_vals);
+    let (next_parent_index, leaf_count, running_hash, stack_depth, out_bit) = parseTreeCheckerProdsNaive2(string, prods, mem_proofs_prod, stack_expected_popped_vals, prods_com);
     assert(out_bit == true);
     (next_parent_index, leaf_count, running_hash, stack_depth)
    
