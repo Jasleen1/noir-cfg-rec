@@ -21,7 +21,7 @@ do
     for pow in $(seq $low_log_n $high_log_n) 
     do
         N=$((2**$pow))
-        low_log_k=4
+        low_log_k=$(($pow + 1))
         high_log_k=$(($pow + 1))
         #$pow
         # high_log_k=$pow

@@ -139,10 +139,11 @@ fn parseTreeCheckerProdsNaive2(
     leaf_count_inp: Field,
     stack_hash_inp: Field, 
     stack_depth_inp: Field,
+    expected_idx: Field, 
     expected_label: Field,
     stack_expected_popped_vals: [StackTuple; K],
     // production_com: Field,
-) -> (Field, Field, Field, Field, Field, bool) {
+) -> (Field, Field, Field, Field, Field, Field, bool) {
     // FIXME: Right now, none of the checks ensure that 
     // the root node is in the set of start symbols.
     let mut output = true;
@@ -248,7 +249,7 @@ fn parseTreeCheckerProdsNaive2(
     // Check that parent nodes are within range upper bound.
     // let parent_range_final_check = (latest_parent.lt((3*N - 1) as Field));
     // output = output * leaves_check  * nodes_check * parent_range_final_check;
-    (next_parent_index, leaf_count, running_hash, stack_depth, expected.label, output)
+    (next_parent_index, leaf_count, running_hash, stack_depth, expected.idx, expected.label, output)
 }
 
 
@@ -270,11 +271,12 @@ fn main(
     leaf_count: Field,
     stack_hash: Field, 
     stack_depth: Field,
+    expected_idx: Field,
     expected_label: Field,
     stack_expected_popped_vals: [StackTuple; K],
     // Below is the stuff we need to verify the recursive proof
     verification_key : [Field; 114], 
-    proof : [Field; 93], 
+    proof : [Field; 109], 
     key_hash : Field,
 ) -> pub (Field, Field, Field, Field) {
     let mut input_slice=string.as_slice();
@@ -297,7 +299,7 @@ fn main(
                                             parseTreeCheckerProdsNaive2(string, prods, mem_proofs_prod, 
                                             next_parent_index, leaf_count, stack_hash, stack_depth, stack_expected_popped_vals);
     assert(out_bit == true);
-    (next_parent_index, leaf_count, next_stack_hash, stack_depth, expected_label)
+    (next_parent_index, leaf_count, next_stack_hash, stack_depth, expected_idx, expected_label)
 }
 
 

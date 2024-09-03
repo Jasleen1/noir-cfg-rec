@@ -1,5 +1,5 @@
 import binascii
-from math import floor
+from math import floor, log2
 import sys 
 import os
 from test_poseidon import poseidon_hash_4, poseidon_hash_from_c_bytes
@@ -33,18 +33,39 @@ mt_hashes[20]="0x2fdf536222da76b4eb9919e950049190bf2919b8560a911b761b3ec405de39a
 
 # Hashed with "leaf=1"
 merkle_prods={}
-merkle_prods[3]="[[mem_proofs_prod]]\nindex=3\n hashpath=[0x02, 0x03, 0x04]\n"
-merkle_prods[4]="[[mem_proofs_prod]]\nindex=3\nhashpath=[0x02, 0x03, 0x04, 0x05]\n"
-merkle_prods[5]="[[mem_proofs_prod]]\nindex=3\nhashpath=[0x02, 0x03, 0x04, 0x05, 0x06]\n"
-merkle_prods[6]="[[mem_proofs_prod]]\nindex=3\nhashpath=[0x02, 0x03, 0x04, 0x05, 0x06, 0x07]\n"
-merkle_prods[7]="[[mem_proofs_prod]]\nindex=3\nhashpath=[0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08]\n"
-merkle_prods[8]="[[mem_proofs_prod]]\nindex=3\nhashpath=[0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09]\n"
-merkle_prods[9]="[[mem_proofs_prod]]\nindex=3\nhashpath=[0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a]\n"
-merkle_prods[10]="[[mem_proofs_prod]]\nindex=3\nhashpath=[0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b]\n"
-merkle_prods[20]="[[mem_proofs_prod]]\nindex=3\nhashpath=[0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15]\n"
+merkle_prods[3]="index=3\n hashpath=[0x02, 0x03, 0x04]\n"
+merkle_prods[4]="index=3\nhashpath=[0x02, 0x03, 0x04, 0x05]\n"
+merkle_prods[5]="index=3\nhashpath=[0x02, 0x03, 0x04, 0x05, 0x06]\n"
+merkle_prods[6]="index=3\nhashpath=[0x02, 0x03, 0x04, 0x05, 0x06, 0x07]\n"
+merkle_prods[7]="index=3\nhashpath=[0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08]\n"
+merkle_prods[8]="index=3\nhashpath=[0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09]\n"
+merkle_prods[9]="index=3\nhashpath=[0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a]\n"
+merkle_prods[10]="index=3\nhashpath=[0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b]\n"
+merkle_prods[11]="hashpath=[0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c]\n index=3\n"
+merkle_prods[12]="hashpath=[0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d]\n index=3\n"
+merkle_prods[13]="hashpath=[0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e]\n index=3\n"
+merkle_prods[14]="hashpath=[0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f]\n index=3\n"
+merkle_prods[15]="hashpath=[0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10]\n index=3\n"
+merkle_prods[16]="hashpath=[0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11]\n index=3\n"
+merkle_prods[17]="hashpath=[0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12]\n index=3\n"
+merkle_prods[18]="hashpath=[0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13]\n index=3\n"
+merkle_prods[19]="hashpath=[0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14]\n index=3\n"
+merkle_prods[20]="index=3\nhashpath=[0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15]\n"
 
-
-
+str_hashes = {}
+str_hashes[4]="0x2036cec379548124a1763f63af31db2e2e879e14b9e1fc3aa8d7124ac0cb46be"
+str_hashes[8]="0x127a00b0a0e0da3e84b583493d8205d26bf608028e1afe881b1a322272e2a985"
+str_hashes[16]="0x0b15644ed9c31485dfea5e55da4bcb865d713bbced87f2f2019601cb4ab5df46"
+str_hashes[32]="0x10d5df6255551e80bd3a4609db43c9b4f194c5c09ce7fcf2909880c31eb060ed"
+str_hashes[64]="0x0f47f8fe8ab6e8b3e5b7a0095d68fb8ba28920822538c57794f78699c1dcd49f"
+str_hashes[128]="0x2dfd1c5d9dd73b771d9e11dd51bb735019c6cc526debf579a675a26233f7d594"
+str_hashes[256]="0x03a9dc41bb80a0db3864e92ec470c32b1cc1f1f72640621d1269ce1896bb8576"
+str_hashes[512]="0x131b54fcc994fcc2d44f28ed7dc3d7cc7dcb405fe55cdfc14be8139f078cb47f"
+str_hashes[1024]="0x201aa28e45c01f50d3ca044cf63306638382f2d7fc434e0d6a3ff913fb73cab7"
+str_hashes[2048]="0x28bb7508bb5634c8c8d7c000e914bf9b54dc63a4733509f1ef584eaf511a139b"
+str_hashes[4096]="0x1be3415b9f14ad8ec39ff69f3fcfb64715f78a3b03755a7a22aabe125176cf90"
+str_hashes[8192]="0x08923c909070e4f7ce356465de012797fde2fa21963f040734624a3662c2c3e9"
+str_hashes[16384]="0x2b57ebe3828ddb9cff8f058f35ef1778764f0b2c4f5387545c37702fde6a1363"
 
 ##### ******************* DFS functions ************************** ########
 
@@ -432,8 +453,8 @@ def generate_all_prover_files_dfs_with_stack(n, k, g=3):
     for i in range(num_proofs):
         if i == 0:
             # prods_str = generate_prod_strings(prod_arr[0:k-1])
-            proofs=[merkle_prods[g] for _ in range(k-1)]
-            mem_proofs_str = ''.join(proofs)
+            proofs=[merkle_prods[g] for _ in range(k)]
+            mem_proofs_str = '[[mem_proofs_prod]]\n'.join(proofs)
             # print(prods_str)
             # print("******************")
             # mem_proofs_str = generate_arr_str("mem_proofs_prod", rule_arr[:k-1])
@@ -483,6 +504,94 @@ def generate_all_prover_files_dfs_with_stack(n, k, g=3):
                 file.write(stack_str + '\n')
             with open('./verifier_toml_files/Verifier.toml' + str(i), 'w') as file:
                 file.write(string_str + '\n')  
+                file.write(stack_depth + '\n')
+                file.write(stack_hash + '\n')
+                file.write(leaf_count + '\n')
+                file.write(next_parent_index_inp + '\n')
+
+
+def generate_all_prover_files_dfs_with_stack_and_com_str(n, k, g=3):
+    [string_arr, label_arr, prod_arr, rule_arr, stack, \
+                leaf_counters, running_hashes, stack_depths, next_parents] = \
+                    naive_prods_full_witness_generator_dfs_with_stack(n)
+    # for out_str in out_strs:
+    #     print(out_str + "\n")
+    string_str = generate_arr_str("string", string_arr)
+    label_str = generate_arr_str("labels", label_arr)
+    prods_com="prods_com=\"" + mt_hashes[g] + "\""
+    # str_com="str_com=\"" + mt_hashes[log2(n)] + "\""
+    str_com="str_com=\"" + str_hashes[n] + "\""
+    num_proofs=int((2*n)/k)
+
+    out_strs = []
+    for i in range(num_proofs):
+        if i == 0:
+            # prods_str = generate_prod_strings(prod_arr[0:k-1])
+            proofs=[merkle_prods[g] for _ in range(k)]
+            # mem_proofs_str = ''.join(proofs)
+            mem_proofs_str = '[[mem_proofs_prod]]\n'.join(proofs)
+            str_proofs = [merkle_prods[log2(n)] for _ in range(k)]
+            str_proof_str = '[[str_proofs]]\n'.join(str_proofs)
+            # print(prods_str)
+            # print("******************")
+            # mem_proofs_str = generate_arr_str("mem_proofs_prod", rule_arr[:k-1])
+            # print("i = 0")
+            # print(prod_arr)
+            prods_str2 = generate_prod_strings2(prod_arr[0:k-1], label_arr)
+            stack_str = generate_stack_str(stack[0:k-1])
+            out_strs = [str_com, string_str, prods_com, mem_proofs_str, prods_str2, stack_str, str_proof_str]
+            with open('./dfs_stack_base/Prover.toml', 'w') as file:
+                for elt in out_strs:
+                    file.write(elt + '\n')
+            with open('./dfs_stack_base/Verifier.toml', 'w') as file:
+                file.write(string_str + '\n') 
+                file.write(str_com + '\n')
+                file.write(prods_com + '\n')
+                # file.write(stack_depth + '\n')
+                # file.write(stack_hash + '\n')
+                # file.write(leaf_count + '\n')
+                # file.write(next_parent_index_inp + '\n')
+                # file.write(string_str + '\n')
+            # Open a file in write mode ('w')
+
+        else:
+            prods_str = generate_prod_strings2(prod_arr[i*k - 1:(i+1)*k - 1], label_arr)
+            # print(prods_str)
+            proofs=[merkle_prods[g] for _ in range(k)]
+            # mem_proofs_str = ''.join(proofs)
+            mem_proofs_str = '[[mem_proofs_prod]]\n'.join(proofs)
+            # mem_proofs_str = generate_arr_str("mem_proofs_prod", rule_arr[i*k - 1:(i+1)*k - 1])
+            stack_str = generate_stack_str(stack[i*k - 1:(i+1)*k - 1])
+            last_pos = i*k - 2
+            # traversal_count = count_str_traversal(prod_arr[:i*k - 1], label_arr)
+            # node_counter=(prod_arr[last_pos][1] + 1 if prod_arr[last_pos][2]==0 else prod_arr[last_pos][2] + 1 )
+            # previous_final_parent = "node_counter=" + str(node_counter)
+            # start_prod_idx_str = "start_prod_idx=" + str(last_pos)
+            # string_elt_count="string_elt_count=" + str(traversal_count)
+            incoming_hash = running_hashes[i*k - 1]
+            str_com="str_com="+str_hashes[n]
+            stack_hash="stack_hash=\"0x"+str(incoming_hash)+"\""
+            leaves_counted = leaf_counters[i*k - 1]
+            leaf_count="leaf_count="+str(leaves_counted)
+            incoming_stack_depth=stack_depths[i*k - 1]
+            stack_depth="stack_depth="+str(incoming_stack_depth)
+            next_parent_id = next_parents[i*k-1]
+            next_parent_index_inp="next_parent_index="+str(next_parent_id)
+            out_strs = [str_com, string_str, label_str,  
+                leaf_count, stack_hash, stack_depth, next_parent_index_inp,prods_com]
+            os.makedirs('./prover_toml_files', exist_ok=True)
+            os.makedirs('./verifier_toml_files', exist_ok=True)
+            with open('./prover_toml_files/Prover.toml' + str(i), 'w') as file:
+                for elt in out_strs:
+                    file.write(elt + '\n')    
+            with open('./prover_toml_files/prods' + str(i), 'w') as file:
+                file.write(mem_proofs_str + '\n')
+                file.write(prods_str + '\n')
+                file.write(stack_str + '\n')
+            with open('./verifier_toml_files/Verifier.toml' + str(i), 'w') as file:
+                # file.write(string_str + '\n')  
+                file.write(str_com + '\n')
+                file.write(prods_com + '\n')
                 file.write(stack_depth + '\n')
                 file.write(stack_hash + '\n')
                 file.write(leaf_count + '\n')
@@ -629,42 +738,6 @@ def generate_all_prover_files_with_merkle_paths_dfs(n, k, g):
                 file.write(string_str + '\n')  
 
 
-
-########## JSON writing functions
-
-
-def generate_prod_strings_json(prod_arr, labels):
-    out_str = "[\n"
-    i = 0 
-    arr_len = len(prod_arr)
-    for tup in prod_arr:
-        parent_label=labels[tup[0]]
-        childL_label=labels[tup[1]]
-        childR_label=labels[tup[2]]
-        parent_idx=tup[0]
-        childL_idx=tup[1]
-        childR_idx=tup[2]
-        out_str += "\t{\n"\
-        + "\t\t\"parent\": {\"label\":" + str(parent_label) + ", \"index\": " + str(parent_idx) + "},\n" \
-        + "\t\t\"childL\": {\"label\":" + str(childL_label) + ", \"index\": " + str(childL_idx) + "},\n" \
-        + "\t\t\"childR\": {\"label\":" + str(childR_label) + ", \"index\": " + str(childR_idx) + "}\n\t}"
-        if(i < (arr_len - 1)):
-            out_str += ",\n"
-        i += 1
-    out_str = out_str + "\n]\n"
-    return out_str
-
-
-# Takes as input a string and a filename (without the .json ext) and writes 
-# the corresponding string and production to a JSON file (complete with .json ext)
-def generate_and_write_productions_json(string_len, filename):
-    [string_arr, label_arr, prod_arr, _] = naive_prods_full_witness_generator(string_len)
-    elt1 = "\"string\":" + str(string_arr) + ","
-    elt2 = generate_prod_strings_json(prod_arr, label_arr)
-    out_str = "{" + elt1 + "\n\"productions\": " + elt2 + "}" 
-    with open(filename + '.json', 'w') as file:
-        file.write(out_str)
-
 # generate_and_write_productions_json(4, "test")
 
 n_from_sys = int(sys.argv[1])
@@ -678,4 +751,6 @@ g_from_sys = int(sys.argv[3])
 
 # test_out = naive_prods_full_witness_generator_dfs_with_stack(n_from_sys)
 # # print(test_out[4])
-generate_all_prover_files_dfs_with_stack(n_from_sys, k_from_sys, g_from_sys)
+# generate_all_prover_files_dfs_with_stack(n_from_sys, k_from_sys, g_from_sys)
+
+generate_all_prover_files_dfs_with_stack_and_com_str(n_from_sys, k_from_sys, g_from_sys)

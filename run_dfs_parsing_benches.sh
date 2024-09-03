@@ -1,12 +1,23 @@
 #!/bin/bash
 # set -eux
 
-low_grammar_size=3
-high_grammar_size=3
-low_log_n=10
-high_log_n=10
+low_grammar_size=7
+high_grammar_size=12
+low_log_n=5
+high_log_n=9
 
 num_trials=0
+
+basic_prods_arr_str="   
+    (S, Ac, Ac),  //0 
+    (Ac, Ac, Ac), //1
+    (Ac, A, C),   //2
+    (A, a, 0),   //3
+    (C, c, 0),   //4
+    (S, A, C),  //5
+    (S, A, C),  //5
+    (S, A, C),  //5"
+
 
 BACKEND=./bbnew
 #~/.bb/bb
@@ -18,11 +29,24 @@ for G in $(seq $low_grammar_size $high_grammar_size)
 do
     G_DIR="$RESULTS_DIR/grammar_size_$G"
     mkdir -p $G_DIR
+
+    # sized_grammar_prods="$basic_prods_arr_str"
+    # grammar_copies=$(($G - 3))
+    # for (( i=0; i<$grammar_copies; i++ )); do
+    #     sized_grammar_prods+=$sized_grammar_prods
+    # done
+    # sized_grammar_prods+="
+    # ]"
+    # left_par="["
+    # sized_grammar_prods="$left_par$sized_grammar_prods"
+    
+    
+
     for pow in $(seq $low_log_n $high_log_n) 
     do
         N=$((2**$pow))
-        low_log_k=5
-        # low_log_k=$(($pow + 1))
+        # low_log_k=5
+        low_log_k=$(($pow + 1))
         high_log_k=$(($pow + 1))
         # high_log_k=3
         #$pow
@@ -35,6 +59,7 @@ do
             mkdir -p $G_DIR/$N/$K
 
             TIME_DIR=$G_DIR/$N/$K
+            VK_DIR="grammar_size_$G/$N/$K"
             num_rounds=$((2*N/K - 1))
 
 
@@ -42,9 +67,8 @@ do
             BASE_CIRC=./dfs_stack_base
             BASE_REC_CIRC=./dfs_stack_rec_1
             REC_CIRC=./dfs_stack_full_rec
-
             # replace {{N}} and {{K}} in src/main.nr    
-            cat main_files/dfs_stack_base_main.nr | STR_SIZE=$N BATCH_SIZE=$K GRAMMAR_SIZE=$G envsubst > $BASE_CIRC/src/main.nr
+            cat main_files/dfs_stack_base_main_HC.nr | STR_SIZE=$N BATCH_SIZE=$K GRAMMAR_SIZE=$G LOG_STR_SIZE=$pow envsubst > $BASE_CIRC/src/main.nr
             cat main_files/dfs_stack_rec_1_main.nr | STR_SIZE=$N BATCH_SIZE=$K GRAMMAR_SIZE=$G envsubst > $BASE_REC_CIRC/src/main.nr
             cat main_files/dfs_stack_full_rec_main.nr | STR_SIZE=$N BATCH_SIZE=$K GRAMMAR_SIZE=$G envsubst > $REC_CIRC/src/main.nr
 
@@ -59,18 +83,20 @@ do
                 echo "Running $trial: $G $N $K" 
                 # Capture start time in nanoseconds
                 start=$(python3 -c "import time; print(time.time_ns())")
-                sh ./setup_vks_dfs_rec.sh "$BACKEND" 
+                # sh ./setup_vks_dfs_rec.sh "$BACKEND" 
+                cp ./vks/$VK_DIR/* ./vks/
+                cp ./vks/$VK_DIR/* ./target/
                 echo "Setup complete"
-                # Capture end time in nanoseconds
-                end=$(python3 -c "import time; print(time.time_ns())")
+                # # Capture end time in nanoseconds
+                # end=$(python3 -c "import time; print(time.time_ns())")
 
-                elapsed=$(echo "scale=3; ($end - $start) / 1000000000" | bc)
-                echo $elapsed >> "$TIME_DIR/setup_time.txt"
+                # elapsed=$(echo "scale=3; ($end - $start) / 1000000000" | bc)
+                # echo $elapsed >> "$TIME_DIR/setup_time.txt"
 
 
                 run_base_round() {
                     start=$(date +%s%N)
-                    nargo execute dfs_stack_base --silence-warnings --package dfs_stack_base 
+                    nargo execute dfs_stack_base --silence-warnings --package dfs_stack_base
                     end=$(date +%s%N)
                     elapsed=$(echo "scale=9; ($end - $start) / 1000000000" | bc)
                     echo $elapsed >> "$TIME_DIR/time_base_exec.txt"
@@ -81,7 +107,7 @@ do
                     #     {
                     # start=$(date +%s%N)  
                     start=$(python3 -c "import time; print(time.time_ns())") 
-                    $BACKEND prove -b ./target/dfs_stack_base.json -w ./target/dfs_stack_base.gz -o $BASE_CIRC/proofs/proof >> "$TIME_DIR/time_base_proof.txt"
+                    gtime -v $BACKEND prove -b ./target/dfs_stack_base.json -w ./target/dfs_stack_base.gz -o $BASE_CIRC/proofs/proof >> "$TIME_DIR/time_base_proof.txt"
                     # end=$(date +%s%N)
                     end=$(python3 -c "import time; print(time.time_ns())")
                     elapsed=$(echo "scale=3; ($end - $start) / 1000000000" | bc)
@@ -221,7 +247,10 @@ do
                 echo $elapsed >> "$TIME_DIR/time_verification.txt"
                 echo $elapsed
 
+                # Use this for Mac
                 file_size=$(stat -f%z "./final_proof/proof")
+                # Use this for Ubuntu
+                # file_size=$(stat -c %s "./final_proof/proof")
                 echo $file_size >> "$TIME_DIR/proof_size.txt"
             done
 

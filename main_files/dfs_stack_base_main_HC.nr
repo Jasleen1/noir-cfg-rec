@@ -131,6 +131,10 @@ fn used_hash_fn(x: Node2, y: Field) -> Field {
     // made_up_hash_fn(x, y)
 }
 
+fn used_str_hash_fn(x: Field, y: Field) -> Field {
+    std::hash::poseidon::bn254::hash_2([x, y])
+}
+
 struct StackTuple {
     idx: Field,
     label: Field,
@@ -162,7 +166,8 @@ impl StackTuple {
 
 // Same as parseTreeChecker but takes in positions of productions, instead of edges. 
 fn parseTreeCheckerProdsNaive2(
-    string: [Field; N],
+    // string: [Field; N],
+    str_com: Field,
     // labels: [Field; 3*N - 1],
     prods: [Production2; K - 1],
     // mem_proofs_prod: [Field; K-1],
@@ -185,6 +190,7 @@ fn parseTreeCheckerProdsNaive2(
     // local_stack.push((root_node.label, root_node.idx, running_hash));
     let mut running_hash = 0;//used_hash_fn(root_node, 0);
     // stack_depth = stack_depth + 1;
+    let mut str_hash = 0;
     
     let mut expected = root_node;
     // let mut pop_counter = 0;
@@ -258,10 +264,12 @@ fn parseTreeCheckerProdsNaive2(
             // This is the case where we are dealing with a NT --> T rule
             // Terminal check checks both that a leaf node is a terminal 
             // and in the string, since we assume the string is correctly composed of terminals.
-            let terminal_check = (left_child.label == string[leaf_count]);
+            // let terminal_check = (left_child.label == string[leaf_count]);
+            print(str_hash);
+            str_hash = used_str_hash_fn(left_child.label, str_hash);
             next_parent_index = child_L_id + 1;
             leaf_count = leaf_count + 1;
-            output = output * terminal_check;
+            // output = output * terminal_check;
             // print("\nOutput 3 = ");
             // print(output);
 
@@ -340,6 +348,10 @@ fn parseTreeCheckerProdsNaive2(
         // print("\nRunning hash");
         // print(running_hash);
     }
+
+    output = output *  (str_com == str_hash);
+
+
 	// Checks that all child nodes are in the correct range.
     // Note that we already checked that the start node is 0.
     // And that all real nodes after that respect increments of 1.
@@ -362,14 +374,14 @@ fn parseTreeCheckerProdsNaive2(
 
 #[recursive]
 fn main(
-    string: pub [Field; N],
     prods: [Production2; K - 1],
+    str_com: pub Field,
     mem_proofs_prod:[MerkleProofProductions; K - 1],
     stack_expected_popped_vals: [StackTuple; K - 1],
-    prods_com: Field,
+    prods_com: pub Field,
 ) -> pub (Field, Field, Field, Field, Field) {
 
-    let (next_parent_index, leaf_count, running_hash, stack_depth, expected_label, out_bit) = parseTreeCheckerProdsNaive2(string, prods, mem_proofs_prod, stack_expected_popped_vals, prods_com);
+    let (next_parent_index, leaf_count, running_hash, stack_depth, expected_label, out_bit) = parseTreeCheckerProdsNaive2(str_com, prods, mem_proofs_prod, stack_expected_popped_vals, prods_com);
     assert(out_bit == true);
     (next_parent_index, leaf_count, running_hash, stack_depth, expected_label)
    

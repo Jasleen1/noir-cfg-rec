@@ -24,6 +24,7 @@ use dep::std;
 
 global N = ${STR_SIZE};
 global K = ${BATCH_SIZE};
+global Log_N = ${LOG_STR_SIZE};
 global Log_Rules = ${GRAMMAR_SIZE};
 // global rules = ${RULES};
 
@@ -78,6 +79,10 @@ struct MerkleProofProductions {
 	hashpath: [Field; Log_Rules]
 }
 
+struct MerkleProofStrings {
+	index: Field,
+	hashpath: [Field; Log_N]
+}
 
 struct Production {
     parent: Field,
@@ -162,7 +167,8 @@ impl StackTuple {
 
 // Same as parseTreeChecker but takes in positions of productions, instead of edges. 
 fn parseTreeCheckerProdsNaive2(
-    string: [Field; N],
+    str_proofs: [MerkleProofStrings; K - 1],
+    str_com: Field,
     // labels: [Field; 3*N - 1],
     prods: [Production2; K - 1],
     // mem_proofs_prod: [Field; K-1],
@@ -258,13 +264,16 @@ fn parseTreeCheckerProdsNaive2(
             // This is the case where we are dealing with a NT --> T rule
             // Terminal check checks both that a leaf node is a terminal 
             // and in the string, since we assume the string is correctly composed of terminals.
-            let terminal_check = (left_child.label == string[leaf_count]);
+            // let terminal_check = (left_child.label == string[leaf_count]);
             next_parent_index = child_L_id + 1;
             leaf_count = leaf_count + 1;
-            output = output * terminal_check;
+            // output = output * terminal_check;
             // print("\nOutput 3 = ");
             // print(output);
-
+            let hash_path_2 = str_proofs[i].hashpath;
+            let index_2 = str_proofs[i].index;
+            let computed_hash_2 = compute_merkle_root_poseiden(1, index_2, hash_path_2);
+            output = output * (computed_hash_2 == str_com);
             if i < (K - 2) {
                 let popped_item = stack_expected_popped_vals[i+1];
                 // #TODO check stack integrity here and reset the running hash
@@ -362,14 +371,15 @@ fn parseTreeCheckerProdsNaive2(
 
 #[recursive]
 fn main(
-    string: pub [Field; N],
+    str_com: pub Field,
+    str_proofs: [MerkleProofStrings; K - 1],
     prods: [Production2; K - 1],
     mem_proofs_prod:[MerkleProofProductions; K - 1],
     stack_expected_popped_vals: [StackTuple; K - 1],
-    prods_com: Field,
+    prods_com: pub Field,
 ) -> pub (Field, Field, Field, Field, Field) {
 
-    let (next_parent_index, leaf_count, running_hash, stack_depth, expected_label, out_bit) = parseTreeCheckerProdsNaive2(string, prods, mem_proofs_prod, stack_expected_popped_vals, prods_com);
+    let (next_parent_index, leaf_count, running_hash, stack_depth, expected_label, out_bit) = parseTreeCheckerProdsNaive2(str_proofs, str_com, prods, mem_proofs_prod, stack_expected_popped_vals, prods_com);
     assert(out_bit == true);
     (next_parent_index, leaf_count, running_hash, stack_depth, expected_label)
    
